@@ -28,19 +28,35 @@ def test_cli_workflow(tmp_path: Path) -> None:
     model = tmp_path / "model.pkl"
     result = runner.invoke(app, ["train", str(data), "--out", str(model), "--model", "gp"])
     assert result.exit_code == 0, result.output
-    result = runner.invoke(app, ["predict", str(model), "--settings", "nozzle_temp_C=265,print_speed_mm_s=20",
-                                 "--samples", "256"])
+    result = runner.invoke(
+        app, ["predict", str(model), "--settings", "nozzle_temp_C=265,print_speed_mm_s=20", "--samples", "256"]
+    )
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
     assert payload["interval90_MPa"][0] < payload["median_strength_MPa"] < payload["interval90_MPa"][1]
     rec = tmp_path / "rec.json"
-    result = runner.invoke(app, ["optimize", str(model), "--objective", "cvar", "--budget", "120",
-                                 "--from-data", str(data), "--out", str(rec)])
+    result = runner.invoke(
+        app,
+        ["optimize", str(model), "--objective", "cvar", "--budget", "120", "--from-data", str(data), "--out", str(rec)],
+    )
     assert result.exit_code == 0, result.output
     assert json.loads(rec.read_text())["objective"] == "cvar"
     stem = tmp_path / "next"
-    result = runner.invoke(app, ["recommend-experiments", str(model), "--n", "3", "--out", str(stem),
-                                 "--mean", "0.45,0.25,0.15,0.08,0.07", "--concentration", "35"])
+    result = runner.invoke(
+        app,
+        [
+            "recommend-experiments",
+            str(model),
+            "--n",
+            "3",
+            "--out",
+            str(stem),
+            "--mean",
+            "0.45,0.25,0.15,0.08,0.07",
+            "--concentration",
+            "35",
+        ],
+    )
     assert result.exit_code == 0, result.output
     assert stem.with_suffix(".csv").exists() and "Next experiments" in stem.with_suffix(".md").read_text()
 
@@ -69,11 +85,19 @@ def test_configs_load_and_variants() -> None:
 @pytest.mark.slow
 def test_tiny_reproduction_end_to_end(tmp_path: Path) -> None:
     cfg_dict = yaml.safe_load((ROOT / "configs" / "fast.yaml").read_text())
-    cfg_dict.update(name="tiny", n_jobs=1, sobol_samples=64, propagation_points=1, propagation_repeats=1,
-                    pareto_budgets=[2.0])
+    cfg_dict.update(
+        name="tiny", n_jobs=1, sobol_samples=64, propagation_points=1, propagation_repeats=1, pareto_budgets=[2.0]
+    )
     cfg_dict["models"].update(models=["physics_rom", "gp"], batch_sizes=[20], folds=2, test_batches=6)
-    cfg_dict["optimisation"].update(seeds=2, train_batches=20, deploy_batches=100, budget=80,
-                                    oracle_compositions=32, oracle_budget=80, n_compositions=16)
+    cfg_dict["optimisation"].update(
+        seeds=2,
+        train_batches=20,
+        deploy_batches=100,
+        budget=80,
+        oracle_compositions=32,
+        oracle_budget=80,
+        n_compositions=16,
+    )
     cfg_dict["ablations"].update(seeds=2, concentration_factors=[])
     cfg_dict["active"].update(seeds=1, rounds=1, candidates=32)
     path = tmp_path / "tiny.yaml"

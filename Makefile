@@ -22,8 +22,8 @@ test:
 	$(BIN)/pytest --cov=robustprint --cov-report=term --cov-fail-under=85
 
 lint:
-	$(BIN)/ruff check src tests app
-	$(BIN)/ruff format --check src tests app
+	$(BIN)/ruff check src tests app scripts
+	$(BIN)/ruff format --check src tests app scripts
 	$(BIN)/mypy
 
 fast:

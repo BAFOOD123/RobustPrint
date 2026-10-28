@@ -45,8 +45,11 @@ def main(res: Path) -> None:
 
     m = read_csv(res / "e2_models/metrics.csv")
     print("\n## E2 metrics (e2_models/metrics.csv)")
-    print(m.groupby(["n_batches", "split", "model"])[["n_train_rows", "rmse_MPa", "nll_log", "crps_log",
-                                                       "coverage90"]].mean().to_string())
+    print(
+        m.groupby(["n_batches", "split", "model"])[["n_train_rows", "rmse_MPa", "nll_log", "crps_log", "coverage90"]]
+        .mean()
+        .to_string()
+    )
     c = read_csv(res / "e2_models/conformal.csv")
     print(c.groupby(["n_batches", "split", "model"])[["coverage90", "width90_log"]].mean().to_string())
     k = read_csv(res / "e2_models/classifier.csv")
@@ -60,7 +63,7 @@ def main(res: Path) -> None:
     for st, g in last.groupby("strategy"):
         diff = g.set_index("seed")["regret"] - ref
         boots = np.random.default_rng(0).choice(diff.to_numpy(), size=(5000, len(diff))).mean(1)
-        print(f"  {st} - random: {diff.mean():.3f} [{np.quantile(boots, .025):.3f}, {np.quantile(boots, .975):.3f}]")
+        print(f"  {st} - random: {diff.mean():.3f} [{np.quantile(boots, 0.025):.3f}, {np.quantile(boots, 0.975):.3f}]")
 
     e = read_csv(res / "e4_propagation/errors.csv")
     e["rel_err_sd"] = e.err_sd.abs() / e.ref_sd

@@ -22,7 +22,7 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -e ".[dev,app]"
       - name: Lint
-        run: ruff check src tests app && ruff format --check src tests app
+        run: ruff check src tests app scripts && ruff format --check src tests app scripts
       - name: Type check
         run: mypy
       - name: Tests with coverage
