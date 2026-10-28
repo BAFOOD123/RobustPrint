@@ -33,3 +33,13 @@ Timestamped log of work on RobustPrint. Times are UTC (container clock).
   expected utility; model-based recommendations far from oracle (regret ~1.6-2.0 MPa).
 - Found worker thread oversubscription (load 15 on 4 cores) → threadpoolctl pinning.
 - Pre-registered protocol in docs/METHODS.md §8 before final runs.
+
+## 2026-10-28 03:30 — full run launched; docs drafted
+- Full pre-registered run (`robustprint reproduce --full`) started 03:28 UTC.
+- Fast pipeline: ~2.3 min (before batching ablations into one pool).
+- Lint (ruff), mypy and 99 tests pass; coverage 97 % (viz/cli excluded from coverage source).
+- Drafted LIMITATIONS, MODEL_CARD, REAL_DATA_GUIDE, ADR-013..019, starter-design command.
+- MUST VERIFY against full results before release (drafted from pilot/fast runs):
+  (1) REAL_DATA_GUIDE §5 claim that model-based AL did not beat random/Sobol;
+  (2) MODEL_CARD "known behaviour" bullets; (3) LIMITATIONS: strength range 2-12 MPa,
+  UT inaccuracy, GP under-coverage, conformal OOD coverage loss.

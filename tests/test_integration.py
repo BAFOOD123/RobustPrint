@@ -87,3 +87,19 @@ def test_tiny_reproduction_end_to_end(tmp_path: Path) -> None:
     assert (out / "e1_optimisation" / "per_seed.csv").read_text().startswith("# SYNTHETIC DATA")
     figures = all_figures(out)
     assert len(figures) == 20 and all(p.exists() for p in figures)
+
+
+def test_starter_design(tmp_path: Path) -> None:
+    from robustprint import space
+    from robustprint.design import STARTER_FACTORS, starter_design
+
+    frame = starter_design()
+    assert len(frame) == 12 + 2 * 4
+    for name, (lo, hi, _) in STARTER_FACTORS.items():
+        assert frame[name].between(lo, hi).all()
+        assert frame[name].nunique() >= 6
+    low, high = space.bounds()
+    values = frame[space.PARAM_NAMES].to_numpy()
+    assert ((values >= low) & (values <= high)).all()
+    result = runner.invoke(app, ["starter-design", "--out", str(tmp_path / "d.csv")])
+    assert result.exit_code == 0 and (tmp_path / "d.csv").exists()

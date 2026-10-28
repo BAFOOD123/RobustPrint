@@ -258,6 +258,24 @@ def figures_cmd(results_dir: Path) -> None:
         typer.echo(str(p))
 
 
+@app.command("starter-design")
+def starter_design_cmd(
+    out: Annotated[Path, typer.Option(help="Output CSV.")] = Path("starter_design.csv"),
+    n_settings: int = 12,
+    repeat_settings: int = 4,
+    batches: int = 3,
+    replicates: int = 3,
+    seed: int = 0,
+) -> None:
+    """Write a small space-filling design to run before any model exists (docs/REAL_DATA_GUIDE.md)."""
+    from robustprint.design import starter_design
+
+    frame = starter_design(n_settings, repeat_settings, batches, replicates, seed)
+    frame.to_csv(out, index=False)
+    typer.echo(frame.to_string(index=False))
+    typer.echo(f"\n{len(frame)} print jobs, {int(frame['n_replicates'].sum())} specimens -> {out}")
+
+
 @app.command("public-data")
 def public_data() -> None:
     """Download the optional Kaggle FDM dataset (licence: unknown; not redistributed)."""

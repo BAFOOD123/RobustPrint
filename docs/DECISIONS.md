@@ -127,3 +127,59 @@ Short records: problem, options, choice, reason. Numbered in the order they were
   composition × process interactions; any benefit of robust optimisation shown on
   synthetic data depends on such interactions existing in real feedstock. We state this in
   LIMITATIONS.md and the README. Real data must decide whether they exist.
+
+## ADR-013 — Model log strength
+- **Choice:** every strength model predicts the log of the job-mean tensile strength with a
+  Gaussian predictive; metrics like NLL, CRPS and calibration are on the log scale, RMSE/MAE
+  also in MPa.
+- **Reason:** strength is positive and its scatter is roughly proportional to its level
+  (coefficient-of-variation noise), so a Gaussian on log strength is homoscedastic to first
+  order and quantiles transform exactly back to MPa.
+
+## ADR-014 — GP noise floor
+- **Problem:** in the first benchmark the ARD GP learned a noise variance of ~2e-5 (log
+  scale), interpolated the data and under-covered (74 % at nominal 90 %).
+- **Choice:** lower bound on the white-noise variance equal to a 3 % coefficient of
+  variation (ASSUMPTION: tensile tests rarely repeat better than that).
+- **Reason:** physically motivated regularisation; the remaining under-coverage is reported,
+  not tuned away. Conformal wrappers are the recommended fix for coverage.
+
+## ADR-015 — Early stopping for NLL-trained networks
+- **Problem:** deep ensembles and MC dropout trained on the Gaussian NLL were badly
+  overconfident (NLL 4–7, 90 % coverage ~0.45–0.57) on ~70 training points.
+- **Options:** stronger weight decay; fewer epochs; β-NLL; early stopping.
+- **Choice:** each member holds out a random 20 % of its training rows and keeps the state
+  with the best validation NLL (checked every 10 epochs).
+- **Reason:** weight decay and shorter training did not help (tested, see PROGRESS.md);
+  early stopping brought coverage to ~0.90. It also gives each member a different subset
+  (implicit bagging). Architecture and learning rate were not tuned further.
+
+## ADR-016 — Constraints, conditioning on success and the safe window
+- **Choice:** all objectives share a success constraint E[π] ≥ 0.9 (nominal: π at the mean
+  composition), implemented as a penalty of 100 MPa per unit probability shortfall. Strength
+  samples are weighted by the predicted success probability (strength is only defined for
+  parts that print). The nozzle window is limited to [T_min, T_deg − 10 °C] of the dominant
+  polymer (ASSUMPTION: 10 °C margin).
+- **Reason:** a 5 % quantile of "utility with failures = 0" is identically 0 whenever more
+  than 5 % of parts fail, which makes the objective flat and uninformative. Separating
+  strength-given-success from the failure constraint keeps both visible; the realised
+  expected utility (failure = 0 MPa) is still reported.
+
+## ADR-017 — Experiment cost model for cost-aware active learning
+- **Choice:** cost = 1 (setup: blending, loading, testing) + relative print time.
+- **Reason:** simplest model that makes slow prints (low speed, thin layers, full infill)
+  more expensive. ASSUMPTION; a lab should replace it with its own costs.
+
+## ADR-018 — Pareto front by ε-constraint
+- **Choice:** maximise CVaR subject to print time ≤ t for a grid of t (penalty method);
+  energy is reported per solution rather than optimised.
+- **Reason:** print time and energy are deterministic, known functions of the settings, so
+  a sweep of a 1-D constraint gives an interpretable front with few optimiser runs;
+  scalarised 3-objective search would add little for a researcher choosing a setting.
+
+## ADR-019 — Main model for the optimiser
+- **Choice:** `hybrid_gp` (physics-residual GP) + `gbm_isotonic` success classifier,
+  fixed in the pre-registered protocol; `deep_ensemble` and plain `gp` are ablations.
+- **Reason:** in the pre-protocol benchmark it had among the best NLL/CRPS, it separates
+  epistemic from aleatoric variance, and its closed-form posterior covariance enables exact
+  batch active learning. The choice was made before the final runs.
