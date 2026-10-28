@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robustprint"
+version = "1.0.0"
+description = "Uncertainty-aware print-parameter optimisation for recycled, variable-composition FDM feedstock."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "RobustPrint contributors" }]
+dependencies = [
+  "numpy>=2.0,<3",
+  "scipy>=1.13,<2",
+  "pandas>=2.2,<4",
+  "scikit-learn>=1.5,<2",
+  "torch>=2.3,<3",
+  "matplotlib>=3.8,<4",
+  "pydantic>=2.6,<3",
+  "typer>=0.12,<1",
+  "pyyaml>=6,<7",
+  "cma>=3.3,<5",
+]
+
+[project.optional-dependencies]
+app = ["streamlit>=1.35,<2"]
+dev = [
+  "pytest>=8,<10",
+  "pytest-cov>=5,<8",
+  "hypothesis>=6.100,<7",
+  "ruff>=0.6,<1",
+  "mypy>=1.10,<3",
+  "pre-commit>=3.7,<5",
+  "pandas-stubs>=2.2",
+  "types-PyYAML>=6",
+]
+
+[project.scripts]
+robustprint = "robustprint.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+robustprint = ["py.typed", "configs/*.yaml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF", "NPY"]
+ignore = ["N803", "N806", "RUF001", "RUF002", "RUF003"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+ignore_missing_imports = true
+files = ["src/robustprint"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["slow: end-to-end tests that take more than a few seconds"]
+
+[tool.coverage.run]
+source = ["robustprint"]
+omit = ["*/robustprint/viz/*", "*/robustprint/cli.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
