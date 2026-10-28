@@ -68,8 +68,15 @@ def weighted_cvar(values: FloatArray, weights: FloatArray, alpha: float) -> Floa
 class RobustProblem:
     """Evaluates all robust statistics for batches of candidate settings."""
 
-    def __init__(self, predictor: Predictor, feedstock: Feedstock, settings: ObjectiveSettings | None = None,
-                 n_compositions: int = 64, n_noise: int = 16, seed: int = 0) -> None:
+    def __init__(
+        self,
+        predictor: Predictor,
+        feedstock: Feedstock,
+        settings: ObjectiveSettings | None = None,
+        n_compositions: int = 64,
+        n_noise: int = 16,
+        seed: int = 0,
+    ) -> None:
         self.predictor = predictor
         self.feedstock = feedstock
         self.settings = settings or ObjectiveSettings()

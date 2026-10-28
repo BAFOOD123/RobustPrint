@@ -107,9 +107,7 @@ def concentration_from_std(mean: ArrayLike, std: ArrayLike) -> float:
     return float(max(np.median(estimates), 1.0))
 
 
-def sample_dirichlet(
-    mean: ArrayLike, concentration: float, n: int, rng: np.random.Generator
-) -> FloatArray:
+def sample_dirichlet(mean: ArrayLike, concentration: float, n: int, rng: np.random.Generator) -> FloatArray:
     """Draw ``n`` compositions from Dirichlet(concentration * mean), zero-safe."""
     alpha = dirichlet_params(mean, concentration)
     draws = rng.dirichlet(np.maximum(alpha, 1e-3), size=n)

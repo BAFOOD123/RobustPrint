@@ -166,9 +166,7 @@ class MaterialLibrary:
     """An ordered set of components plus their pairwise blend incompatibilities."""
 
     components: tuple[Component, ...] = DEFAULT_COMPONENTS
-    incompatibility: dict[frozenset[str], float] = field(
-        default_factory=lambda: dict(DEFAULT_INCOMPATIBILITY)
-    )
+    incompatibility: dict[frozenset[str], float] = field(default_factory=lambda: dict(DEFAULT_INCOMPATIBILITY))
 
     @property
     def names(self) -> list[str]:

@@ -79,7 +79,9 @@ class RidgeInteractions:
     def fit(self, X: FloatArray, y: FloatArray, n_replicates: np.ndarray | None = None) -> RidgeInteractions:
         """Fit with evidence-maximised regularisation (scikit-learn ``BayesianRidge``)."""
         self.pipe_: Pipeline = make_pipeline(
-            StandardScaler(), PolynomialFeatures(self.degree, include_bias=False), StandardScaler(),
+            StandardScaler(),
+            PolynomialFeatures(self.degree, include_bias=False),
+            StandardScaler(),
             BayesianRidge(),
         )
         self.pipe_.fit(X, y)
@@ -102,18 +104,33 @@ class GBMQuantile:
 
     name = "gbm_quantile"
 
-    def __init__(self, quantiles: tuple[float, float] = (0.05, 0.95), random_state: int = 0,
-                 max_iter: int = 200, learning_rate: float = 0.05, max_leaf_nodes: int = 15) -> None:
+    def __init__(
+        self,
+        quantiles: tuple[float, float] = (0.05, 0.95),
+        random_state: int = 0,
+        max_iter: int = 200,
+        learning_rate: float = 0.05,
+        max_leaf_nodes: int = 15,
+    ) -> None:
         self.quantiles = quantiles
         self.random_state = random_state
-        self.kwargs = {"max_iter": max_iter, "learning_rate": learning_rate, "max_leaf_nodes": max_leaf_nodes,
-                       "min_samples_leaf": 5, "random_state": random_state}
+        self.kwargs = {
+            "max_iter": max_iter,
+            "learning_rate": learning_rate,
+            "max_leaf_nodes": max_leaf_nodes,
+            "min_samples_leaf": 5,
+            "random_state": random_state,
+        }
 
     def fit(self, X: FloatArray, y: FloatArray, n_replicates: np.ndarray | None = None) -> GBMQuantile:
         """Fit mean and two quantile models."""
         self.mean_model_ = HistGradientBoostingRegressor(loss="squared_error", **self.kwargs).fit(X, y)
-        self.lower_ = HistGradientBoostingRegressor(loss="quantile", quantile=self.quantiles[0], **self.kwargs).fit(X, y)
-        self.upper_ = HistGradientBoostingRegressor(loss="quantile", quantile=self.quantiles[1], **self.kwargs).fit(X, y)
+        self.lower_ = HistGradientBoostingRegressor(loss="quantile", quantile=self.quantiles[0], **self.kwargs).fit(
+            X, y
+        )
+        self.upper_ = HistGradientBoostingRegressor(loss="quantile", quantile=self.quantiles[1], **self.kwargs).fit(
+            X, y
+        )
         return self
 
     def predict_quantiles(self, X: FloatArray) -> tuple[FloatArray, FloatArray]:

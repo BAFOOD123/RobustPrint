@@ -30,7 +30,9 @@ from robustprint.physics.simulator import DEFAULT_CONFIG, Feedstock, SimulatorCo
 class Predictor(Protocol):
     """Anything that predicts log-strength distributions and success probabilities."""
 
-    def predict(self, composition: FloatArray, moisture: FloatArray, params: FloatArray) -> tuple[Prediction, FloatArray]:
+    def predict(
+        self, composition: FloatArray, moisture: FloatArray, params: FloatArray
+    ) -> tuple[Prediction, FloatArray]:
         """Row-wise prediction for aligned (n, D), (n,), (n, 8) inputs."""
         ...
 
@@ -56,7 +58,9 @@ class ModelPredictor:
     mean_replicates: float = 1.0
     single_part: bool = True
 
-    def predict(self, composition: FloatArray, moisture: FloatArray, params: FloatArray) -> tuple[Prediction, FloatArray]:
+    def predict(
+        self, composition: FloatArray, moisture: FloatArray, params: FloatArray
+    ) -> tuple[Prediction, FloatArray]:
         """Predict log strength (with single-part correction) and P(success)."""
         X = self.features.transform(composition, params, moisture)
         pred = self.strength_model.predict(X)
@@ -77,7 +81,9 @@ class OraclePredictor:
 
     cfg: SimulatorConfig = DEFAULT_CONFIG
 
-    def predict(self, composition: FloatArray, moisture: FloatArray, params: FloatArray) -> tuple[Prediction, FloatArray]:
+    def predict(
+        self, composition: FloatArray, moisture: FloatArray, params: FloatArray
+    ) -> tuple[Prediction, FloatArray]:
         """Exact log-mean strength and success probability."""
         out = true_outcomes(composition, params, moisture, None, self.cfg)
         ale = out["noise_cv"] ** 2 + self.cfg.batch_effect_sd**2

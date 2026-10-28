@@ -68,6 +68,7 @@ class ExperimentConfig(BaseModel):
     active: ActiveLearningConfig
     sobol_samples: int = 2048
     propagation_points: int = 20
+    propagation_repeats: int = 20
     pareto_budgets: list[float] = [0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0]
 
 

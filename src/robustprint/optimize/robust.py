@@ -81,8 +81,16 @@ def maximise(
     best_u, best_s = u0[best_i].copy(), float(s0[best_i])
     evals = n_init
     opts = cma.CMAOptions()
-    opts.set({"bounds": [0.0, 1.0], "popsize": popsize, "seed": seed + 1, "verbose": -9,
-              "maxfevals": max(budget - n_init, popsize), "tolfun": 1e-6})
+    opts.set(
+        {
+            "bounds": [0.0, 1.0],
+            "popsize": popsize,
+            "seed": seed + 1,
+            "verbose": -9,
+            "maxfevals": max(budget - n_init, popsize),
+            "tolfun": 1e-6,
+        }
+    )
     es = cma.CMAEvolutionStrategy(best_u, 0.2, opts)
     while not es.stop():
         cand = np.asarray(es.ask())
@@ -95,8 +103,13 @@ def maximise(
     return OptimisationResult(to_x(best_u), best_s, evals)
 
 
-def recommend(problem: RobustProblem, objective: str, budget: int = 1200, seed: int = 0,
-              library: MaterialLibrary = DEFAULT_LIBRARY) -> OptimisationResult:
+def recommend(
+    problem: RobustProblem,
+    objective: str,
+    budget: int = 1200,
+    seed: int = 0,
+    library: MaterialLibrary = DEFAULT_LIBRARY,
+) -> OptimisationResult:
     """Recommend settings that maximise ``objective`` for the problem's feedstock."""
     low, high = safe_bounds(problem.feedstock, library)
     return maximise(lambda x: problem.score(objective, x), low, high, budget=budget, seed=seed)

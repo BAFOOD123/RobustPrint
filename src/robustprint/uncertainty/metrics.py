@@ -39,8 +39,9 @@ def gaussian_crps(y: FloatArray, mean: FloatArray, std: FloatArray) -> float:
     return float(np.mean(crps))
 
 
-def quantile_calibration(y: FloatArray, mean: FloatArray, std: FloatArray,
-                         levels: FloatArray = QUANTILE_LEVELS) -> tuple[FloatArray, FloatArray]:
+def quantile_calibration(
+    y: FloatArray, mean: FloatArray, std: FloatArray, levels: FloatArray = QUANTILE_LEVELS
+) -> tuple[FloatArray, FloatArray]:
     """Observed frequency of y <= predicted p-quantile, for each level p (Kuleshov et al., 2018)."""
     pit = norm.cdf((y - mean) / np.maximum(std, 1e-12))
     observed = np.array([np.mean(pit <= p) for p in levels])

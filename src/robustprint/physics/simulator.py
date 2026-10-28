@@ -39,9 +39,7 @@ class SimulatorConfig:
     halpin_tsai_xi: float = 4.0
     degradation_scale_C: float = 10.0
     degradation_weight: float = 1.0
-    hydrolysis_sensitivity: dict[str, float] = field(
-        default_factory=lambda: {"pet": 1.5, "pa": 1.5}
-    )
+    hydrolysis_sensitivity: dict[str, float] = field(default_factory=lambda: {"pet": 1.5, "pa": 1.5})
     hydrolysis_onset_C: float = 240.0
     clog_intercept: float = -6.0
     clog_fiber: float = 18.0
@@ -205,13 +203,16 @@ def true_outcomes(
     longitudinal = 0.55 + 0.40 * bond
     orient = process.tsai_hill_factor(angle, 0.75 * bond / longitudinal, 0.5 * bond / longitudinal)
     section = process.section_fraction(infill)
-    strength = (
-        sigma_comp * chemistry * longitudinal * dense * orient * section * np.exp(-4.0 * over) * np.exp(b)
-    )
+    strength = sigma_comp * chemistry * longitudinal * dense * orient * section * np.exp(-4.0 * over) * np.exp(b)
 
     mod_orient = process.tsai_hill_factor(angle, np.full(n, 0.8), np.full(n, 0.6))
     modulus = (
-        modulus_comp * chemistry**0.3 * (1.0 - pores) ** 2 * (0.85 + 0.15 * bond) * mod_orient * section
+        modulus_comp
+        * chemistry**0.3
+        * (1.0 - pores) ** 2
+        * (0.85 + 0.15 * bond)
+        * mod_orient
+        * section
         * np.exp(0.5 * b)
     )
 

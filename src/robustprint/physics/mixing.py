@@ -43,9 +43,7 @@ def immiscibility_index(weights: FloatArray, chi: FloatArray) -> FloatArray:
     return np.asarray(np.einsum("ni,ij,nj->n", w, chi, w), dtype=float)
 
 
-def blend_strength(
-    weights: FloatArray, strengths: FloatArray, chi: FloatArray, kappa: float
-) -> FloatArray:
+def blend_strength(weights: FloatArray, strengths: FloatArray, chi: FloatArray, kappa: float) -> FloatArray:
     """Polymer-blend strength: rule of mixtures with an immiscibility penalty.
 
     sigma_blend = (sum_i w_i sigma_i) * (1 - kappa * I(w)), with I from

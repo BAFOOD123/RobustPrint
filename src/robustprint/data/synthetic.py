@@ -136,7 +136,13 @@ def generate_dataset(
     params = space.from_unit(design_points(n, rng, design))
     batch_index = np.repeat(np.arange(n_batches), settings_per_batch)
     frame = experiments_frame(
-        batches, batch_index, params, rng, n_replicates, cfg,
-        measurement_concentration=measurement_concentration, id_prefix=id_prefix,
+        batches,
+        batch_index,
+        params,
+        rng,
+        n_replicates,
+        cfg,
+        measurement_concentration=measurement_concentration,
+        id_prefix=id_prefix,
     )
     return frame, batches

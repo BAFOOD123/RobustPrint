@@ -189,7 +189,10 @@ def print_time_proxy(print_speed: FloatArray, layer_height: FloatArray, infill_p
 
 
 def energy_proxy(
-    nozzle_temp: FloatArray, bed_temp: FloatArray, print_speed: FloatArray, layer_height: FloatArray,
+    nozzle_temp: FloatArray,
+    bed_temp: FloatArray,
+    print_speed: FloatArray,
+    layer_height: FloatArray,
     infill_pct: FloatArray,
 ) -> FloatArray:
     """Relative energy: print time times heater load, with load proportional to the

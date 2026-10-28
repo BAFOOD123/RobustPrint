@@ -14,7 +14,6 @@ from sklearn.preprocessing import StandardScaler
 from robustprint.models.base import Prediction
 from robustprint.physics.composition import FloatArray
 
-
 #: Smallest allowed noise standard deviation on log strength: a 3 % coefficient of variation,
 #: a conservative lower bound on tensile-test repeatability (ASSUMPTION, ADR-014).
 MIN_LOG_NOISE_SD = 0.03
@@ -42,8 +41,9 @@ class GPRegressor:
         self.n_restarts = n_restarts
         self.random_state = random_state
 
-    def _fit_gp(self, Xs: FloatArray, ys: FloatArray, alpha: FloatArray | float, noise: bool,
-                noise_floor: float = 1e-5) -> GaussianProcessRegressor:
+    def _fit_gp(
+        self, Xs: FloatArray, ys: FloatArray, alpha: FloatArray | float, noise: bool, noise_floor: float = 1e-5
+    ) -> GaussianProcessRegressor:
         gp = GaussianProcessRegressor(
             kernel=ard_kernel(Xs.shape[1], noise=noise, noise_floor=noise_floor),
             alpha=alpha,
@@ -81,7 +81,9 @@ class GPRegressor:
         mean, std = self.gp_.predict(self.x_scaler_.transform(X), return_std=True)
         total = std**2 * self.y_std_**2
         noise = self.noise_variance
-        return Prediction(mean * self.y_std_ + self.y_mean_, np.maximum(total - noise, 1e-12), np.full(len(mean), noise))
+        return Prediction(
+            mean * self.y_std_ + self.y_mean_, np.maximum(total - noise, 1e-12), np.full(len(mean), noise)
+        )
 
 
 class HeteroscedasticGP(GPRegressor):
@@ -108,7 +110,9 @@ class HeteroscedasticGP(GPRegressor):
         gp = self.gp_
         for _ in range(self.n_iter):
             mean, cov = gp.predict(Xs, return_cov=True)
-            draws = rng.multivariate_normal(mean, cov + 1e-9 * np.eye(len(mean)), size=self.n_samples, method="cholesky")
+            draws = rng.multivariate_normal(
+                mean, cov + 1e-9 * np.eye(len(mean)), size=self.n_samples, method="cholesky"
+            )
             resid_var = np.mean((ys[None, :] - draws) ** 2, axis=0)
             log_noise = np.log(np.maximum(resid_var, 1e-6))
             self.noise_mean_ = float(log_noise.mean())
@@ -123,8 +127,7 @@ class HeteroscedasticGP(GPRegressor):
         """Latent variance from the main GP; input-dependent noise from the noise GP."""
         Xs = self.x_scaler_.transform(X)
         mean, std = self.gp_.predict(Xs, return_std=True)
-        noise = np.maximum(np.exp(self.noise_gp_.predict(Xs) + self.noise_mean_) * self.y_std_**2,
-                           MIN_LOG_NOISE_SD**2)
+        noise = np.maximum(np.exp(self.noise_gp_.predict(Xs) + self.noise_mean_) * self.y_std_**2, MIN_LOG_NOISE_SD**2)
         return Prediction(mean * self.y_std_ + self.y_mean_, std**2 * self.y_std_**2, noise)
 
 

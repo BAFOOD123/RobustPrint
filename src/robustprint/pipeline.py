@@ -13,9 +13,16 @@ from robustprint.uncertainty.propagation import ModelPredictor, pooled_specimen_
 MIN_STRENGTH_ROWS = 5
 
 
-def train_predictor(arrays: ExperimentArrays, model: str = "hybrid_gp", seed: int = 0,
-                    features: FeatureBuilder | None = None, n_members: int = 5, epochs: int = 400,
-                    gp_restarts: int = 2, classifier: str = "gbm_isotonic") -> ModelPredictor:
+def train_predictor(
+    arrays: ExperimentArrays,
+    model: str = "hybrid_gp",
+    seed: int = 0,
+    features: FeatureBuilder | None = None,
+    n_members: int = 5,
+    epochs: int = 400,
+    gp_restarts: int = 2,
+    classifier: str = "gbm_isotonic",
+) -> ModelPredictor:
     """Fit a strength model (on successful jobs) and a success classifier (on all jobs)."""
     fb = features or FeatureBuilder()
     X = fb.transform(arrays.composition, arrays.params, arrays.moisture)

@@ -29,7 +29,7 @@ def conformal_quantile(scores: FloatArray, alpha: float) -> float:
 def group_split(groups: np.ndarray, calib_fraction: float, rng: np.random.Generator) -> tuple[np.ndarray, np.ndarray]:
     """Boolean masks (proper, calibration) that keep every group on one side."""
     unique = np.unique(groups)
-    n_cal = max(1, int(round(calib_fraction * len(unique))))
+    n_cal = max(1, round(calib_fraction * len(unique)))
     cal_groups = rng.choice(unique, size=n_cal, replace=False)
     calib = np.isin(groups, cal_groups)
     return ~calib, calib
@@ -38,8 +38,13 @@ def group_split(groups: np.ndarray, calib_fraction: float, rng: np.random.Genera
 class NormalisedConformal:
     """Split conformal with scores |y - mu| / sigma around any probabilistic regressor."""
 
-    def __init__(self, factory: Callable[[], ProbabilisticRegressor], alpha: float = 0.1,
-                 calib_fraction: float = 0.25, random_state: int = 0) -> None:
+    def __init__(
+        self,
+        factory: Callable[[], ProbabilisticRegressor],
+        alpha: float = 0.1,
+        calib_fraction: float = 0.25,
+        random_state: int = 0,
+    ) -> None:
         self.factory = factory
         self.alpha = alpha
         self.calib_fraction = calib_fraction

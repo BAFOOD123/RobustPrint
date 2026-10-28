@@ -1,0 +1,40 @@
+# Full reproduction (METHODS.md section 8). About 15-20 min on a 4-core laptop CPU.
+name: full
+seed: 20261028
+settings_per_batch: 4
+n_replicates: 3
+n_jobs: 4
+models:
+  models: [physics_rom, ridge_interactions, gbm_quantile, gp, het_gp, hybrid_gp, deep_ensemble, mc_dropout]
+  batch_sizes: [15, 30, 60, 120]
+  seeds: 3
+  folds: 5
+  test_batches: 30
+optimisation:
+  model: hybrid_gp
+  seeds: 30
+  train_batches: 60
+  deploy_batches: 2000
+  n_compositions: 64
+  n_noise: 16
+  budget: 800
+  oracle_compositions: 256
+  oracle_budget: 1500
+ablations:
+  seeds: 15
+  models: [deep_ensemble, gp]
+  train_batches: [30, 120]
+  concentration_factors: [0.25, 4.0]
+  noise_levels: [2.0]
+  ensemble_members: [3, 10]
+active:
+  seeds: 20
+  initial_jobs: 20
+  rounds: 8
+  batch_size: 4
+  candidates: 512
+  strategies: [random, sobol, max_variance, targeted_ivr, cost_aware_ivr]
+sobol_samples: 2048
+propagation_points: 20
+propagation_repeats: 20
+pareto_budgets: [0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0]

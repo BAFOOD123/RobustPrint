@@ -88,9 +88,16 @@ class Selection:
     scores: list[float]
 
 
-def greedy_select(posterior: GPPosterior, candidates: FloatArray, p_success: FloatArray, batch_size: int,
-                  strategy: str, reference: FloatArray | None = None, cost: FloatArray | None = None,
-                  n_replicates: int = 3) -> Selection:
+def greedy_select(
+    posterior: GPPosterior,
+    candidates: FloatArray,
+    p_success: FloatArray,
+    batch_size: int,
+    strategy: str,
+    reference: FloatArray | None = None,
+    cost: FloatArray | None = None,
+    n_replicates: int = 3,
+) -> Selection:
     """Greedy batch selection with exact posterior-covariance updates.
 
     Args:
@@ -117,10 +124,7 @@ def greedy_select(posterior: GPPosterior, candidates: FloatArray, p_success: Flo
     scores: list[float] = []
     available = np.ones(len(candidates), dtype=bool)
     for _ in range(min(batch_size, len(candidates))):
-        if use_ref:
-            gain = np.sum(cross**2, axis=0) / (var_c + noise)
-        else:
-            gain = var_c.copy()
+        gain = np.sum(cross**2, axis=0) / (var_c + noise) if use_ref else var_c.copy()
         value = gain * p_success
         if strategy == "cost_aware_ivr":
             if cost is None:

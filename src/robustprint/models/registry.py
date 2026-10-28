@@ -63,8 +63,11 @@ def make_model(
     if name == "het_gp":
         return HeteroscedasticGP(n_restarts=max(gp_restarts - 1, 0), random_state=seed)
     if name == "hybrid_gp":
-        return HybridGP(partial(physics_prior_on_features, features=features, library=library),
-                        n_restarts=gp_restarts, random_state=seed)
+        return HybridGP(
+            partial(physics_prior_on_features, features=features, library=library),
+            n_restarts=gp_restarts,
+            random_state=seed,
+        )
     if name == "deep_ensemble":
         return DeepEnsemble(n_members=n_members, epochs=epochs, random_state=seed)
     if name == "mc_dropout":

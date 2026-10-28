@@ -47,12 +47,15 @@ class SuccessClassifier:
             return self
         if self.kind == "logistic":
             self.model_: Pipeline | CalibratedClassifierCV = make_pipeline(
-                StandardScaler(), PolynomialFeatures(2, include_bias=False), StandardScaler(),
+                StandardScaler(),
+                PolynomialFeatures(2, include_bias=False),
+                StandardScaler(),
                 LogisticRegression(C=self.C, max_iter=2000),
             )
         else:
-            base = HistGradientBoostingClassifier(max_iter=150, learning_rate=0.05, max_leaf_nodes=15,
-                                                  random_state=self.random_state)
+            base = HistGradientBoostingClassifier(
+                max_iter=150, learning_rate=0.05, max_leaf_nodes=15, random_state=self.random_state
+            )
             self.model_ = CalibratedClassifierCV(base, method="isotonic", cv=3)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ConvergenceWarning)

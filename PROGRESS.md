@@ -7,7 +7,7 @@ Timestamped log of work on RobustPrint. Times are UTC (container clock).
 - Environment: 4 CPU cores, 15 GB RAM, no GPU. Python 3.11/3.12/3.13 available; `uv`, `ruff`, `mypy` on PATH.
 - Plan: follow mission phases in order (research → data → models → optimizer/AL → eval → CLI/tests/CI → docs → audit).
 
-## 2026-10-28 ~03:10 — Phase 1 done, Phase 2 in progress
+## 2026-10-28 ~02:45 — Phase 1 done, Phase 2 in progress
 - Verified references (docs/REFERENCES.md). Kaggle "3D Printer Dataset for Mechanical Engineers"
   found (50 rows, PLA/ABS); licence "Unknown" → not redistributed; optional download with checksum.
 - Could not find a peer-reviewed open table of bulk properties for all components; used Engineering
@@ -22,7 +22,7 @@ Timestamped log of work on RobustPrint. Times are UTC (container clock).
   ~43 % print success (was ~26 %). Simulator frozen after this point (v1.0).
 - Next: schema doc, tests for physics/data, then models.
 
-## 2026-10-28 ~04:10 — Phase 3/4 implementation
+## 2026-10-28 ~03:10 — Phase 3/4 implementation
 - Models implemented; first CV benchmark (synthetic): deep ensemble/MC dropout badly overconfident
   (NLL 4-7) until early stopping on a validation split was added (ADR-015); GP learned ~zero noise
   and under-covered → 3 % CV noise floor (ADR-014). Logistic poly-2 success model worse than base

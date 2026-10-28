@@ -42,8 +42,8 @@ class ValidationReport:
 
 def _row_label(df: pd.DataFrame, idx: object) -> str:
     """'row 3 (experiment_id=E0003)' with 1-based CSV data-row numbering."""
-    position = int(np.asarray(df.index.get_loc(idx)).ravel()[0]) + 1 if idx in df.index else idx
-    exp = df.at[idx, "experiment_id"] if "experiment_id" in df.columns else "?"
+    position = list(df.index).index(idx) + 1
+    exp = str(df.at[idx, "experiment_id"]) if "experiment_id" in df.columns else "?"
     return f"row {position} (experiment_id={exp})"
 
 
@@ -66,8 +66,15 @@ def coerce_bool(series: pd.Series) -> tuple[pd.Series, list[int]]:
     return pd.Series(out, index=series.index, dtype="object"), bad
 
 
-def _check_numeric(df: pd.DataFrame, report: ValidationReport, column: str, low: float, high: float,
-                   unit: str = "", required: bool = False) -> None:
+def _check_numeric(
+    df: pd.DataFrame,
+    report: ValidationReport,
+    column: str,
+    low: float,
+    high: float,
+    unit: str = "",
+    required: bool = False,
+) -> None:
     """Range-check a numeric column, reporting each offending row."""
     if column not in df.columns:
         return
@@ -82,7 +89,8 @@ def _check_numeric(df: pd.DataFrame, report: ValidationReport, column: str, low:
     for idx in df.index[out]:
         report.errors.append(
             f"{_row_label(df, idx)}: {column}={values[idx]:g} is outside the physically valid "
-            f"range [{low:g}, {high:g}] {unit}".rstrip() + "."
+            f"range [{low:g}, {high:g}] {unit}".rstrip()
+            + "."
         )
     df[column] = values
 
@@ -121,7 +129,9 @@ def validate_frame(df: pd.DataFrame, schema: Schema = DEFAULT_SCHEMA) -> tuple[p
     except (TypeError, ValueError):
         dates = pd.to_datetime(df["date"], errors="coerce")
     for idx in df.index[dates.isna()]:
-        report.errors.append(f"{_row_label(df, idx)}: date={df.at[idx, 'date']!r} is not a valid date (use YYYY-MM-DD).")
+        report.errors.append(
+            f"{_row_label(df, idx)}: date={df.at[idx, 'date']!r} is not a valid date (use YYYY-MM-DD)."
+        )
 
     for col in schema.fraction_columns:
         _check_numeric(df, report, col, 0.0, 1.0, required=True)
@@ -190,8 +200,7 @@ def _check_batch_consistency(df: pd.DataFrame, schema: Schema, report: Validatio
     for batch_id, row in spread.iterrows():
         if (row.astype(float) > 1e-6).any():
             report.errors.append(
-                f"batch {batch_id}: rows disagree on composition; every row of a batch must repeat "
-                "the same fractions."
+                f"batch {batch_id}: rows disagree on composition; every row of a batch must repeat the same fractions."
             )
 
 

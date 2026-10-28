@@ -50,7 +50,9 @@ def _xy(arrays: ExperimentArrays, fb: FeatureBuilder) -> tuple[np.ndarray, np.nd
     return X, X[ok], np.log(arrays.strength[ok]), arrays.groups[ok]
 
 
-def _coverage_rows(y: np.ndarray, pred: Prediction, model: str, split: str, base: dict[str, object]) -> list[dict[str, object]]:
+def _coverage_rows(
+    y: np.ndarray, pred: Prediction, model: str, split: str, base: dict[str, object]
+) -> list[dict[str, object]]:
     rows = []
     for level in COVERAGE_LEVELS:
         lo, hi = gaussian_interval(pred, level)
@@ -69,7 +71,7 @@ def run_model_task(task: ModelTask) -> dict[str, list[dict[str, object]]]:
     X_all, X, y, g = _xy(train, fb)
     _, Xn, yn, _ = _xy(new, fb)
     _, Xo, yo, _ = _xy(ood, fb)
-    base = {"seed": task.seed_index, "n_batches": task.n_batches, "n_train_rows": int(len(y))}
+    base: dict[str, object] = {"seed": task.seed_index, "n_batches": task.n_batches, "n_train_rows": len(y)}
     metrics: list[dict[str, object]] = []
     coverage: list[dict[str, object]] = []
     calibration: list[dict[str, object]] = []
@@ -83,12 +85,16 @@ def run_model_task(task: ModelTask) -> dict[str, list[dict[str, object]]]:
             fold_pred_var_e.append(p.var_epistemic)
             fold_pred_var_a.append(p.var_aleatoric)
             fold_y.append(y[te])
-        cv_pred = Prediction(np.concatenate(fold_pred_mean), np.concatenate(fold_pred_var_e), np.concatenate(fold_pred_var_a))
+        cv_pred = Prediction(
+            np.concatenate(fold_pred_mean), np.concatenate(fold_pred_var_e), np.concatenate(fold_pred_var_a)
+        )
         cv_y = np.concatenate(fold_y)
         metrics.append({**base, "model": name, "split": "grouped_cv", **regression_report(cv_y, cv_pred)})
         coverage += _coverage_rows(cv_y, cv_pred, name, "grouped_cv", base)
         levels, observed = quantile_calibration(cv_y, cv_pred.mean, cv_pred.std)
-        calibration += [{**base, "model": name, "level": lv, "observed": ob} for lv, ob in zip(levels, observed, strict=True)]
+        calibration += [
+            {**base, "model": name, "level": lv, "observed": ob} for lv, ob in zip(levels, observed, strict=True)
+        ]
         full = make_model(name, fb, s).fit(X, y)
         for split, Xt, yt in (("new_batches", Xn, yn), ("shifted_ood", Xo, yo)):
             pt = full.predict(Xt)
@@ -97,7 +103,8 @@ def run_model_task(task: ModelTask) -> dict[str, list[dict[str, object]]]:
     conformal: list[dict[str, object]] = []
     wrappers: list[object] = [
         NormalisedConformal(partial(make_model, m, fb, s), alpha=0.1, random_state=s)
-        for m in task.models if m in CONFORMAL_MODELS
+        for m in task.models
+        if m in CONFORMAL_MODELS
     ]
     wrappers.append(ConformalizedQuantileRegression(alpha=0.1, random_state=s))
     for w in wrappers:
@@ -112,25 +119,55 @@ def run_model_task(task: ModelTask) -> dict[str, list[dict[str, object]]]:
     for kind in CLASSIFIERS:
         probs = np.zeros(len(X_all))
         for tr, te in GroupKFold(min(task.folds, len(np.unique(groups_all)))).split(X_all, train.success, groups_all):
-            probs[te] = SuccessClassifier(kind, random_state=s).fit(X_all[tr], train.success[tr]).predict_proba(X_all[te])
-        classifier.append({**base, "classifier": kind, "split": "grouped_cv", **classification_report(train.success, probs)})
+            probs[te] = (
+                SuccessClassifier(kind, random_state=s).fit(X_all[tr], train.success[tr]).predict_proba(X_all[te])
+            )
+        classifier.append(
+            {**base, "classifier": kind, "split": "grouped_cv", **classification_report(train.success, probs)}
+        )
         mean_p, freq, count = reliability_curve(train.success, probs)
-        reliability += [{**base, "classifier": kind, "bin": b, "mean_p": mp, "freq": fr, "count": ct}
-                        for b, (mp, fr, ct) in enumerate(zip(mean_p, freq, count, strict=True))]
+        reliability += [
+            {**base, "classifier": kind, "bin": b, "mean_p": mp, "freq": fr, "count": ct}
+            for b, (mp, fr, ct) in enumerate(zip(mean_p, freq, count, strict=True))
+        ]
         fitted = SuccessClassifier(kind, random_state=s).fit(X_all, train.success)
         for split, arr in (("new_batches", new), ("shifted_ood", ood)):
             Xt = fb.transform(arr.composition, arr.params, arr.moisture)
-            classifier.append({**base, "classifier": kind, "split": split,
-                               **classification_report(arr.success, fitted.predict_proba(Xt))})
-    return {"metrics": metrics, "coverage": coverage, "calibration": calibration, "conformal": conformal,
-            "classifier": classifier, "reliability": reliability}
+            classifier.append(
+                {
+                    **base,
+                    "classifier": kind,
+                    "split": split,
+                    **classification_report(arr.success, fitted.predict_proba(Xt)),
+                }
+            )
+    return {
+        "metrics": metrics,
+        "coverage": coverage,
+        "calibration": calibration,
+        "conformal": conformal,
+        "classifier": classifier,
+        "reliability": reliability,
+    }
 
 
-def model_comparison(models: list[str], batch_sizes: list[int], seeds: int, folds: int, test_batches: int,
-                     settings_per_batch: int, n_replicates: int, base_seed: int, n_jobs: int) -> dict[str, pd.DataFrame]:
+def model_comparison(
+    models: list[str],
+    batch_sizes: list[int],
+    seeds: int,
+    folds: int,
+    test_batches: int,
+    settings_per_batch: int,
+    n_replicates: int,
+    base_seed: int,
+    n_jobs: int,
+) -> dict[str, pd.DataFrame]:
     """Run E2 over all (seed, size) cells; returns one DataFrame per result table."""
-    tasks = [ModelTask(i, n, tuple(models), folds, test_batches, settings_per_batch, n_replicates, base_seed)
-             for n in batch_sizes for i in range(seeds)]
+    tasks = [
+        ModelTask(i, n, tuple(models), folds, test_batches, settings_per_batch, n_replicates, base_seed)
+        for n in batch_sizes
+        for i in range(seeds)
+    ]
     parts = parallel_map(run_model_task, tasks, n_jobs)
     keys = parts[0].keys()
     return {k: pd.DataFrame([row for part in parts for row in part[k]]) for k in keys}

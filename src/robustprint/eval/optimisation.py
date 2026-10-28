@@ -24,8 +24,14 @@ from robustprint.physics.simulator import (
 from robustprint.pipeline import train_predictor
 from robustprint.uncertainty.propagation import ModelPredictor, OraclePredictor
 
-DEPLOY_METRICS = ("expected_utility", "failure_rate", "q05_strength", "cvar10_strength", "mean_strength",
-                  "p_meet_threshold")
+DEPLOY_METRICS = (
+    "expected_utility",
+    "failure_rate",
+    "q05_strength",
+    "cvar10_strength",
+    "mean_strength",
+    "p_meet_threshold",
+)
 #: Metrics where smaller is better.
 LOWER_IS_BETTER = {"failure_rate"}
 
@@ -36,7 +42,9 @@ class AleatoricOnly:
 
     inner: ModelPredictor
 
-    def predict(self, composition: FloatArray, moisture: FloatArray, params: FloatArray) -> tuple[Prediction, FloatArray]:
+    def predict(
+        self, composition: FloatArray, moisture: FloatArray, params: FloatArray
+    ) -> tuple[Prediction, FloatArray]:
         """Same as the wrapped predictor with zero epistemic variance."""
         pred, p = self.inner.predict(composition, moisture, params)
         return Prediction(pred.mean, np.zeros_like(pred.var_epistemic), pred.var_aleatoric), p
@@ -81,8 +89,13 @@ class Variant:
         """Simulator configuration implied by the noise factor."""
         f = self.noise_factor
         c = DEFAULT_CONFIG
-        return replace(c, noise_cv_base=c.noise_cv_base * f, noise_cv_contaminant=c.noise_cv_contaminant * f,
-                       noise_cv_fiber=c.noise_cv_fiber * f, noise_cv_porosity=c.noise_cv_porosity * f)
+        return replace(
+            c,
+            noise_cv_base=c.noise_cv_base * f,
+            noise_cv_contaminant=c.noise_cv_contaminant * f,
+            noise_cv_fiber=c.noise_cv_fiber * f,
+            noise_cv_porosity=c.noise_cv_porosity * f,
+        )
 
     def true_feedstock(self) -> Feedstock:
         """Feedstock that training batches are drawn from."""
@@ -115,7 +128,7 @@ def _corrupt(arrays: ExperimentArrays, fraction: float, rng: np.random.Generator
     if fraction <= 0:
         return arrays
     rows = np.flatnonzero(arrays.strength_rows)
-    n_bad = int(round(fraction * rows.size))
+    n_bad = round(fraction * rows.size)
     bad = rng.choice(rows, size=n_bad, replace=False)
     strength = arrays.strength.copy()
     strength[bad] *= rng.uniform(0.3, 0.6, size=n_bad)
@@ -149,42 +162,129 @@ def run_opt_task(task: OptTask) -> list[dict[str, object]]:
     settings = ObjectiveSettings()
     problem = RobustProblem(pred_used, belief, settings, task.n_compositions, task.n_noise, seed=s + 3)
     deployment = draw_deployment(v.deployment_feedstock(), task.deploy_batches, s + 11, cfg)
-    base = {"variant": v.name, "seed": task.seed_index, "n_strength_rows": int(arrays.strength_rows.sum()),
-            "n_jobs": len(arrays)}
+    base = {
+        "variant": v.name,
+        "seed": task.seed_index,
+        "n_strength_rows": int(arrays.strength_rows.sum()),
+        "n_jobs": len(arrays),
+    }
     rows: list[dict[str, object]] = []
     for objective in v.objectives:
         res = recommend(problem, objective, budget=task.budget, seed=s + 5)
         stats = problem.statistics(res.params[None, :])
-        rows.append({**base, "method": objective, **deploy(res.params, deployment, settings.chance_threshold_MPa, cfg),
-                     **{f"pred_{k}": float(val[0]) for k, val in stats.items()},
-                     **{f"x_{i}": float(val) for i, val in enumerate(res.params)}})
+        rows.append(
+            {
+                **base,
+                "method": objective,
+                **deploy(res.params, deployment, settings.chance_threshold_MPa, cfg),
+                **{f"pred_{k}": float(val[0]) for k, val in stats.items()},
+                **{f"x_{i}": float(val) for i, val in enumerate(res.params)},
+            }
+        )
     for objective, params in task.oracle_params.items():
         x = np.asarray(params)
-        rows.append({**base, "method": f"oracle_{objective}", **deploy(x, deployment, settings.chance_threshold_MPa, cfg),
-                     **{f"x_{i}": float(val) for i, val in enumerate(x)}})
+        rows.append(
+            {
+                **base,
+                "method": f"oracle_{objective}",
+                **deploy(x, deployment, settings.chance_threshold_MPa, cfg),
+                **{f"x_{i}": float(val) for i, val in enumerate(x)},
+            }
+        )
     return rows
 
 
-def oracle_settings(variant: Variant, objectives: tuple[str, ...], n_compositions: int, budget: int,
-                    base_seed: int) -> dict[str, list[float]]:
+def oracle_settings(
+    variant: Variant, objectives: tuple[str, ...], n_compositions: int, budget: int, base_seed: int
+) -> dict[str, list[float]]:
     """Optimise each objective on the ground truth for the deployment feedstock."""
-    problem = RobustProblem(OraclePredictor(variant.simulator()), variant.deployment_feedstock(), ObjectiveSettings(),
-                            n_compositions, 16, seed=seed_for(base_seed, 99))
-    return {obj: recommend(problem, obj, budget=budget, seed=seed_for(base_seed, 98)).params.tolist()
-            for obj in objectives}
+    problem = RobustProblem(
+        OraclePredictor(variant.simulator()),
+        variant.deployment_feedstock(),
+        ObjectiveSettings(),
+        n_compositions,
+        16,
+        seed=seed_for(base_seed, 99),
+    )
+    return {
+        obj: recommend(problem, obj, budget=budget, seed=seed_for(base_seed, 98)).params.tolist() for obj in objectives
+    }
 
 
-def run_variant(variant: Variant, seeds: int, base_seed: int, settings_per_batch: int, n_replicates: int,
-                deploy_batches: int, n_compositions: int, n_noise: int, budget: int, oracle_compositions: int,
-                oracle_budget: int, n_jobs: int, oracle_objectives: tuple[str, ...] = ("expected", "cvar")
-                ) -> pd.DataFrame:
-    """All seeds of one variant, including oracle settings deployed on the same batches."""
-    oracle = oracle_settings(variant, oracle_objectives, oracle_compositions, oracle_budget, base_seed)
-    tasks = [OptTask(variant, i, base_seed, settings_per_batch, n_replicates, deploy_batches, n_compositions,
-                     n_noise, budget, oracle) for i in range(seeds)]
+@dataclass(frozen=True)
+class OracleTask:
+    """Oracle optimisation of one objective for one variant's world."""
+
+    variant: Variant
+    objective: str
+    n_compositions: int
+    budget: int
+    base_seed: int
+
+
+def _run_oracle(task: OracleTask) -> list[float]:
+    return oracle_settings(task.variant, (task.objective,), task.n_compositions, task.budget, task.base_seed)[
+        task.objective
+    ]
+
+
+def _world_key(v: Variant) -> tuple[str, float, float]:
+    """Variants with the same key share the same ground truth and deployment distribution."""
+    return (v.deploy_feedstock, v.true_concentration_factor, v.noise_factor)
+
+
+def run_variants(
+    variants: list[Variant],
+    seeds: int,
+    base_seed: int,
+    settings_per_batch: int,
+    n_replicates: int,
+    deploy_batches: int,
+    n_compositions: int,
+    n_noise: int,
+    budget: int,
+    oracle_compositions: int,
+    oracle_budget: int,
+    n_jobs: int,
+    oracle_objectives: tuple[str, ...] = ("expected", "cvar"),
+) -> pd.DataFrame:
+    """All seeds of several variants in one worker pool, with oracle settings per distinct world.
+
+    The oracle settings are deployed on the same fresh batches as the recommendations, and
+    regret of expected utility is measured against the oracle-expected setting.
+    """
+    worlds: dict[tuple[str, float, float], Variant] = {}
+    for v in variants:
+        worlds.setdefault(_world_key(v), v)
+    oracle_tasks = [
+        OracleTask(v, obj, oracle_compositions, oracle_budget, base_seed)
+        for v in worlds.values()
+        for obj in oracle_objectives
+    ]
+    oracle_params = parallel_map(_run_oracle, oracle_tasks, n_jobs)
+    oracle: dict[tuple[str, float, float], dict[str, list[float]]] = {}
+    for t, params in zip(oracle_tasks, oracle_params, strict=True):
+        oracle.setdefault(_world_key(t.variant), {})[t.objective] = params
+    tasks = [
+        OptTask(
+            v,
+            i,
+            base_seed,
+            settings_per_batch,
+            n_replicates,
+            deploy_batches,
+            n_compositions,
+            n_noise,
+            budget,
+            oracle[_world_key(v)],
+        )
+        for v in variants
+        for i in range(seeds)
+    ]
     frame = pd.DataFrame([row for part in parallel_map(run_opt_task, tasks, n_jobs) for row in part])
-    ref = frame[frame["method"] == "oracle_expected"].set_index("seed")["expected_utility"]
-    frame["regret_expected_utility"] = frame["seed"].map(ref) - frame["expected_utility"]
+    ref = frame[frame["method"] == "oracle_expected"].set_index(["variant", "seed"])["expected_utility"]
+    keys = pd.MultiIndex.from_frame(frame[["variant", "seed"]])
+    frame["regret_expected_utility"] = ref.reindex(keys).to_numpy() - frame["expected_utility"].to_numpy()
     return frame
 
 
@@ -201,8 +301,17 @@ def summarise(frame: pd.DataFrame, reference: str = "nominal") -> tuple[pd.DataF
             mf = vf[vf["method"] == method].sort_values("seed")
             for metric in (*DEPLOY_METRICS, "regret_expected_utility"):
                 est, lo, hi = bootstrap_ci(mf[metric].to_numpy())
-                summary_rows.append({"variant": variant, "method": method, "metric": metric, "mean": est,
-                                     "ci_low": lo, "ci_high": hi, "n_seeds": len(mf)})
+                summary_rows.append(
+                    {
+                        "variant": variant,
+                        "method": method,
+                        "metric": metric,
+                        "mean": est,
+                        "ci_low": lo,
+                        "ci_high": hi,
+                        "n_seeds": len(mf),
+                    }
+                )
         if reference not in methods:
             continue
         ref = vf[vf["method"] == reference].sort_values("seed")

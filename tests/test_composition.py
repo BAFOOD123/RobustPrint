@@ -10,9 +10,7 @@ from hypothesis.extra.numpy import arrays
 
 from robustprint.physics import composition as comp
 
-positive_rows = arrays(
-    np.float64, st.integers(2, 7), elements=st.floats(1e-3, 1.0, allow_nan=False)
-)
+positive_rows = arrays(np.float64, st.integers(2, 7), elements=st.floats(1e-3, 1.0, allow_nan=False))
 
 
 @given(positive_rows)

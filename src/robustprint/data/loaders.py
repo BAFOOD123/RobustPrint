@@ -140,5 +140,5 @@ def estimate_feedstock(arrays: ExperimentArrays, name: str = "estimated") -> Fee
         mean=tuple(closure(alpha).tolist()),
         concentration=float(alpha.sum()),
         moisture_median_pct=float(np.exp(np.median(log_m))),
-        moisture_log_sd=float(max(np.std(log_m, ddof=1), 1e-3)) if len(log_m) > 1 else 0.5,
+        moisture_log_sd=float(np.maximum(np.std(log_m, ddof=1), 1e-3)) if len(log_m) > 1 else 0.5,
     )

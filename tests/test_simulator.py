@@ -97,8 +97,13 @@ def test_moisture_reduces_strength_at_high_temperature() -> None:
 
 def test_extrusion_limit_reached_at_high_flow() -> None:
     ratio, demand = process.extrusion_ratio(
-        np.array([220.0]), np.array([80.0]), np.array([0.35]), np.array([110.0]),
-        np.array([0.1]), np.array([0.0]), process.ProcessConstants(),
+        np.array([220.0]),
+        np.array([80.0]),
+        np.array([0.35]),
+        np.array([110.0]),
+        np.array([0.1]),
+        np.array([0.0]),
+        process.ProcessConstants(),
     )
     assert demand[0] > 1.0 and ratio[0] < 0.9
 

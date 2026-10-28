@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pandas as pd
 from scipy.stats import norm, qmc
@@ -16,8 +18,9 @@ from robustprint.physics.simulator import Feedstock
 from robustprint.uncertainty.propagation import ModelPredictor, sample_feedstock
 
 
-def candidate_pool(feedstock: Feedstock, n: int, rng: np.random.Generator,
-                   library: MaterialLibrary = DEFAULT_LIBRARY) -> tuple[FloatArray, FloatArray, FloatArray]:
+def candidate_pool(
+    feedstock: Feedstock, n: int, rng: np.random.Generator, library: MaterialLibrary = DEFAULT_LIBRARY
+) -> tuple[FloatArray, FloatArray, FloatArray]:
     """Candidate (composition, moisture, settings) triples.
 
     Compositions and moisture are draws from the feedstock distribution (what the lab can
@@ -25,7 +28,9 @@ def candidate_pool(feedstock: Feedstock, n: int, rng: np.random.Generator,
     """
     fs = sample_feedstock(feedstock, n, rng)
     low, high = safe_bounds(feedstock, library)
-    u = qmc.Sobol(space.N_PARAMS, scramble=True, seed=int(rng.integers(2**31 - 1))).random(n)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="The balance properties of Sobol")
+        u = qmc.Sobol(space.N_PARAMS, scramble=True, seed=int(rng.integers(2**31 - 1))).random(n)
     return fs.composition, fs.moisture, low + u * (high - low)
 
 
@@ -63,14 +68,20 @@ def select_experiments(
             raise ValueError("IVR strategies need the currently recommended setting.")
         ref = sample_feedstock(feedstock, n_reference, rng)
         reference = feats.transform(ref.composition, np.tile(recommended, (n_reference, 1)), ref.moisture)
-    sel = greedy_select(GPPosterior(model), X, p_success, n, strategy, reference,
-                        experiment_cost(params), n_replicates)
+    sel = greedy_select(GPPosterior(model), X, p_success, n, strategy, reference, experiment_cost(params), n_replicates)
     idx = np.array(sel.indices)
     return comp[idx], moist[idx], params[idx], np.array(sel.scores)
 
 
-def experiments_table(predictor: ModelPredictor, composition: FloatArray, moisture: FloatArray, params: FloatArray,
-                      scores: FloatArray, strategy: str, library: MaterialLibrary = DEFAULT_LIBRARY) -> pd.DataFrame:
+def experiments_table(
+    predictor: ModelPredictor,
+    composition: FloatArray,
+    moisture: FloatArray,
+    params: FloatArray,
+    scores: FloatArray,
+    strategy: str,
+    library: MaterialLibrary = DEFAULT_LIBRARY,
+) -> pd.DataFrame:
     """Human-readable next-experiments table with predictions and costs."""
     pred, p = predictor.predict(composition, moisture, params)
     z = norm.ppf(0.95)

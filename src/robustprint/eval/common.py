@@ -29,11 +29,25 @@ def seed_for(*keys: int) -> int:
     return int(np.random.SeedSequence([int(k) for k in keys]).generate_state(1)[0] % (2**31 - 1))
 
 
-def campaign(feedstock: Feedstock, n_batches: int, settings_per_batch: int, seed: int, n_replicates: int = 3,
-             cfg: SimulatorConfig = DEFAULT_CONFIG, prefix: str = "B") -> ExperimentArrays:
+def campaign(
+    feedstock: Feedstock,
+    n_batches: int,
+    settings_per_batch: int,
+    seed: int,
+    n_replicates: int = 3,
+    cfg: SimulatorConfig = DEFAULT_CONFIG,
+    prefix: str = "B",
+) -> ExperimentArrays:
     """Simulate a training campaign and return model-ready arrays."""
-    frame, _ = generate_dataset(feedstock, n_batches, settings_per_batch, np.random.default_rng(seed),
-                                n_replicates=n_replicates, cfg=cfg, batch_prefix=prefix)
+    frame, _ = generate_dataset(
+        feedstock,
+        n_batches,
+        settings_per_batch,
+        np.random.default_rng(seed),
+        n_replicates=n_replicates,
+        cfg=cfg,
+        batch_prefix=prefix,
+    )
     return to_arrays(frame)
 
 

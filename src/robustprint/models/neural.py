@@ -35,8 +35,17 @@ class GaussianMLP(nn.Module):
         return out[:, 0], out[:, 1].clamp(MIN_LOG_VAR, MAX_LOG_VAR)
 
 
-def _train(net: GaussianMLP, X: torch.Tensor, y: torch.Tensor, epochs: int, lr: float, weight_decay: float,
-           seed: int, val_fraction: float = 0.2, check_every: int = 10) -> GaussianMLP:
+def _train(
+    net: GaussianMLP,
+    X: torch.Tensor,
+    y: torch.Tensor,
+    epochs: int,
+    lr: float,
+    weight_decay: float,
+    seed: int,
+    val_fraction: float = 0.2,
+    check_every: int = 10,
+) -> GaussianMLP:
     """Full-batch Adam on the Gaussian NLL with early stopping on a random validation split.
 
     Without early stopping, NLL-trained networks on ~100 points shrink their predicted
@@ -47,7 +56,7 @@ def _train(net: GaussianMLP, X: torch.Tensor, y: torch.Tensor, epochs: int, lr: 
     gen = torch.Generator().manual_seed(seed)
     n = X.shape[0]
     perm = torch.randperm(n, generator=gen)
-    n_val = max(int(round(val_fraction * n)), 2) if n >= 10 else 0
+    n_val = max(round(val_fraction * n), 2) if n >= 10 else 0
     val, tr = perm[:n_val], perm[n_val:]
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
     loss_fn = nn.GaussianNLLLoss(full=False, eps=1e-6)
@@ -98,8 +107,15 @@ class DeepEnsemble(_TorchRegressor):
 
     name = "deep_ensemble"
 
-    def __init__(self, n_members: int = 5, hidden: int = 64, epochs: int = 400, lr: float = 5e-3,
-                 weight_decay: float = 1e-3, random_state: int = 0) -> None:
+    def __init__(
+        self,
+        n_members: int = 5,
+        hidden: int = 64,
+        epochs: int = 400,
+        lr: float = 5e-3,
+        weight_decay: float = 1e-3,
+        random_state: int = 0,
+    ) -> None:
         self.n_members = n_members
         self.hidden = hidden
         self.epochs = epochs
@@ -141,8 +157,16 @@ class MCDropout(_TorchRegressor):
 
     name = "mc_dropout"
 
-    def __init__(self, hidden: int = 64, dropout: float = 0.1, epochs: int = 400, lr: float = 5e-3,
-                 weight_decay: float = 1e-3, n_passes: int = 50, random_state: int = 0) -> None:
+    def __init__(
+        self,
+        hidden: int = 64,
+        dropout: float = 0.1,
+        epochs: int = 400,
+        lr: float = 5e-3,
+        weight_decay: float = 1e-3,
+        n_passes: int = 50,
+        random_state: int = 0,
+    ) -> None:
         self.hidden = hidden
         self.dropout = dropout
         self.epochs = epochs
@@ -155,8 +179,15 @@ class MCDropout(_TorchRegressor):
         """Train one network with dropout."""
         Xt, yt = self._prepare(X, y)
         torch.manual_seed(self.random_state)
-        self.net_ = _train(GaussianMLP(X.shape[1], self.hidden, dropout=self.dropout), Xt, yt, self.epochs,
-                           self.lr, self.weight_decay, self.random_state)
+        self.net_ = _train(
+            GaussianMLP(X.shape[1], self.hidden, dropout=self.dropout),
+            Xt,
+            yt,
+            self.epochs,
+            self.lr,
+            self.weight_decay,
+            self.random_state,
+        )
         return self
 
     def predict(self, X: FloatArray) -> Prediction:

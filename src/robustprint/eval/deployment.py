@@ -18,14 +18,17 @@ class DeploymentBatches:
     seed: int
 
 
-def draw_deployment(feedstock: Feedstock, n_batches: int, seed: int, cfg: SimulatorConfig = DEFAULT_CONFIG) -> DeploymentBatches:
+def draw_deployment(
+    feedstock: Feedstock, n_batches: int, seed: int, cfg: SimulatorConfig = DEFAULT_CONFIG
+) -> DeploymentBatches:
     """Draw fresh batches from the feedstock (never seen in training)."""
     rng = np.random.default_rng(seed)
     return DeploymentBatches(sample_batches(feedstock, n_batches, rng, cfg=cfg, prefix="D"), seed)
 
 
-def deploy(params: FloatArray, deployment: DeploymentBatches, threshold_MPa: float = 5.0,
-           cfg: SimulatorConfig = DEFAULT_CONFIG) -> dict[str, float]:
+def deploy(
+    params: FloatArray, deployment: DeploymentBatches, threshold_MPa: float = 5.0, cfg: SimulatorConfig = DEFAULT_CONFIG
+) -> dict[str, float]:
     """Print one part per fresh batch with fixed settings and summarise realised outcomes.
 
     Each part fails with the true failure probability; successful parts have a noisy

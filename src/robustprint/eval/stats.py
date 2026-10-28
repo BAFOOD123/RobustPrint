@@ -10,8 +10,9 @@ from scipy.stats import wilcoxon
 from robustprint.physics.composition import FloatArray
 
 
-def bootstrap_ci(values: FloatArray, n_boot: int = 5000, level: float = 0.95, seed: int = 0,
-                 statistic: str = "mean") -> tuple[float, float, float]:
+def bootstrap_ci(
+    values: FloatArray, n_boot: int = 5000, level: float = 0.95, seed: int = 0, statistic: str = "mean"
+) -> tuple[float, float, float]:
     """Percentile bootstrap CI of the mean or median. Returns (estimate, low, high)."""
     x = np.asarray(values, dtype=float)
     x = x[np.isfinite(x)]
@@ -62,16 +63,29 @@ class PairedComparison:
         return dict(self.__dict__)
 
 
-def paired_comparison(a: FloatArray, b: FloatArray, metric: str, method: str, reference: str,
-                      seed: int = 0) -> PairedComparison:
+def paired_comparison(
+    a: FloatArray, b: FloatArray, metric: str, method: str, reference: str, seed: int = 0
+) -> PairedComparison:
     """Two-sided Wilcoxon signed-rank test with bootstrap CI of the mean difference a - b."""
     a = np.asarray(a, dtype=float)
     b = np.asarray(b, dtype=float)
     d = a - b
     est, lo, hi = bootstrap_ci(d, seed=seed)
     p = float(wilcoxon(a, b, zero_method="wilcox").pvalue) if np.any(d != 0) else 1.0
-    return PairedComparison(metric, method, reference, int(d.size), float(a.mean()), float(b.mean()),
-                            est, lo, hi, float(np.median(d)), rank_biserial(d), p)
+    return PairedComparison(
+        metric,
+        method,
+        reference,
+        int(d.size),
+        float(a.mean()),
+        float(b.mean()),
+        est,
+        lo,
+        hi,
+        float(np.median(d)),
+        rank_biserial(d),
+        p,
+    )
 
 
 def holm(p_values: FloatArray) -> FloatArray:
