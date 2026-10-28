@@ -10,10 +10,13 @@
 
 ## 1. The problem
 
-On the International Space Station, most trash is packaging: plastic films, foams, food
-wrappers, cloth and fibres. NASA has flown a combined plastic recycler and 3D printer
-(the Refabricator, built by Tethers Unlimited [NASA-REFAB]), so recycling waste into new
-parts in space is no longer hypothetical. The difficulty is the feedstock. A recycled
+On the International Space Station, much of the logistics waste is packaging: plastic
+films, foams and food wrappers, plus cloth and fibres
+([NASA NTRS 20210023437](https://ntrs.nasa.gov/api/citations/20210023437/downloads/BlanchardAlexanderJ.pdf)).
+NASA has tested a combined plastic recycler and 3D printer on the station (the
+Refabricator, built by Tethers Unlimited;
+[NASA Tech Briefs](https://www.techbriefs.com/component/content/article/37861-nasa-s-refabricator-recycles-waste-plastic-into-new-parts)),
+so recycling waste into new parts in space is no longer hypothetical. The difficulty is the feedstock. A recycled
 batch is a **mixture**: some polyethylene, some PET, some nylon, a few fibres, some foam
 or food residue. Its exact composition is only roughly known and changes from one batch
 to the next.
@@ -29,8 +32,9 @@ degrades when the nozzle is too hot. RobustPrint asks:
 It does four things:
 
 1. **Represents composition as a distribution** (a Dirichlet over mass fractions), not a point.
-2. **Predicts strength with calibrated uncertainty**, split into feedstock (input), model
-   (epistemic) and noise (aleatoric) parts, plus the probability that a print succeeds.
+2. **Predicts strength with uncertainty**, split into feedstock (input), model (epistemic)
+   and noise (aleatoric) parts, plus the probability that a print succeeds. Calibration is
+   measured, not assumed, and conformal intervals are available where coverage matters.
 3. **Recommends robust settings** that maximise a low quantile or CVaR of strength, or the
    expected strength, over the composition distribution, under a print-success constraint.
 4. **Recommends the next experiments** (active learning) and writes them as a table a
@@ -62,7 +66,8 @@ are trained on it. Each objective recommends one setting, which is printed once 
 | *Oracle nominal (true function)* | *17.6 %* | *5.56* | *8.05* |
 | *Oracle expected (true function)* | *9.6 %* | *5.32* | *8.52* |
 
-Mean over seeds [95 % bootstrap CI]. Expected utility counts a failed print as 0 MPa.
+Mean over seeds [95 % bootstrap CI; for the oracle rows the CIs are narrower than
+±0.04 because only the deployment batches vary]. Expected utility counts a failed print as 0 MPa.
 Files: [`e1_optimisation/summary.csv`](results/full/e1_optimisation/summary.csv),
 [`tests.csv`](results/full/e1_optimisation/tests.csv),
 [`per_seed.csv`](results/full/e1_optimisation/per_seed.csv).
@@ -93,12 +98,16 @@ What this shows:
 - **Ablations** ([`e1b_ablations/`](results/full/e1b_ablations/), 15 seeds each). Only one
   variant produced Holm-significant differences: with twice the batch-to-batch spread, the
   *expected* objective cut failures from 16.7 % to 13.1 % (Holm p = 0.041), and CVaR lowered
-  the mean strength of good parts by 1.44 MPa (Holm p = 0.032). Removing composition
-  propagation, removing the physics prior, or telling the optimiser the wrong spread (×4 or ÷4)
-  changed nothing beyond noise. A deep ensemble, although best-calibrated in
-  cross-validation, made much worse recommendations (expected utility about 4.3 MPa
-  instead of about 6.5 MPa): the optimiser exploits its errors. Quadrupling the data (120 batches) helped every
-  objective (nominal 7.43 MPa); nominal stayed best.
+  the mean strength of good parts by 1.44 MPa (Holm p = 0.032). Compared with the
+  main run on the same seeds
+  ([`vs_main_paired.csv`](results/full/e1b_ablations/vs_main_paired.csv)), removing
+  composition propagation, removing the physics prior, or telling the optimiser the wrong
+  spread (concentration ×4 or ×0.25) made no clear difference. Only 1 of 72 such
+  comparisons had a 95 % CI excluding zero, about what chance alone would give. A deep
+  ensemble, although its intervals had the best coverage in cross-validation, made much
+  worse recommendations (expected utility about 4.3 MPa instead of about 6.5 MPa): the
+  optimiser exploits its errors. Doubling the data (120 batches) helped every objective
+  (nominal 7.43 MPa), and nominal stayed best.
 
 **Models (E2,** [`e2_models/`](results/full/e2_models/)**).** Grouped cross-validation by
 batch, 3 seeds, at 120 training batches (about 207 successful jobs):
@@ -141,8 +150,8 @@ batch, 3 seeds, at 120 training batches (about 207 successful jobs):
   ([`errors.csv`](results/full/e4_propagation/errors.csv)).
 - *Sensitivity (E5,* [`global.csv`](results/full/e5_sensitivity/global.csv)*)*: over the
   search space, nozzle temperature dominates both strength (total Sobol index 0.58) and
-  print success (0.74), followed by composition (0.25 and 0.29). At the recommended
-  setting, contaminant content explains most composition-driven strength variation
+  print success (0.74), followed by composition (0.25 and 0.29). At the oracle's
+  CVaR-optimal setting, contaminant content explains most composition-driven strength variation
   (first-order 0.49) and fibre content most of the success variation (0.47)
   ([`components.csv`](results/full/e5_sensitivity/components.csv)).
 - *Pareto (E6,* [`front.csv`](results/full/e6_pareto/front.csv)*)*: raising the allowed
@@ -153,17 +162,17 @@ batch, 3 seeds, at 120 training batches (about 207 successful jobs):
   dataset (10 × repeated 5-fold CV), all four models tested had similar CRPS on log strength
   (0.206–0.212). Quantile gradient boosting was badly overconfident (NLL 25.6), and the deep
   ensemble's 90 % intervals had coverage closest to nominal (0.90)
-  ([`e7_public_benchmark.csv`](results/full/e7_public_benchmark.csv)). The simulator's effect directions match the data for layer height,
-  infill and fan, and disagree for nozzle temperature, bed temperature and speed
+  ([`e7_public_benchmark.csv`](results/full/e7_public_benchmark.csv)). The simulator's effect
+  directions match the data for layer height, infill and fan, and disagree for nozzle temperature, bed temperature and speed
   ([`e7_public_trends.csv`](results/full/e7_public_trends.csv)). This dataset contains no
   recycled material.
 
 ## 3. Quickstart
 
 ```bash
-git clone <this repo> && cd RobustPrint
+git clone https://github.com/BAFOOD123/RobustPrint.git && cd RobustPrint
 make setup          # creates .venv, installs CPU-only PyTorch and the package
-make fast           # end-to-end smoke run in about 2 minutes -> results/fast/
+make fast           # end-to-end smoke run (83 s on a 4-core CPU) -> results/fast/
 ```
 
 `make test` runs the test suite. `make full` reproduces every number in this README

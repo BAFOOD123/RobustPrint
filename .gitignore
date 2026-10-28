@@ -19,3 +19,4 @@ data/external/*
 results/runs/
 results/**/_tmp*
 .DS_Store
+results/fast/

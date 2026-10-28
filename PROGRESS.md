@@ -57,3 +57,15 @@ Timestamped log of work on RobustPrint. Times are UTC (container clock).
   composition share 19-22 % vs 84 % in truth.
 - AL: no strategy distinguishable from random within 52 jobs. UT inaccurate on ground truth.
 - README written from run-1 numbers; to be verified against clean run (scripts/readme_numbers.py).
+
+## 2026-10-28 04:35 — final audit
+- Clean full run (commit 27e1a57): 16 min 10 s; all result files byte-identical to run 1 except
+  timings and two files run 1 had computed from rounded CSVs (6th significant digit).
+- README numbers verified against results/full with scripts/readme_numbers.py; corrected 5
+  roundings, the E7 claim (deep ensemble did not have best CRPS), "quadrupling" → "doubling",
+  "best-calibrated" → "best coverage", "only significant effect" → two effects in one variant,
+  E5 setting description, and the overclaim "calibrated uncertainty".
+- Found and fixed a mislabelled sensitivity figure (shared y-axis with per-panel sort order).
+- Fresh clone: make setup OK, make test: 100 passed, coverage 96.75 %; make fast: see below.
+- make fast in the fresh clone: 83 s (E7 skipped: public data not downloaded). setup+test+fast: 2 min 38 s.
+- Tagged v1.0.0.
