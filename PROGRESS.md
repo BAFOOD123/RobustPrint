@@ -43,3 +43,17 @@ Timestamped log of work on RobustPrint. Times are UTC (container clock).
   (1) REAL_DATA_GUIDE §5 claim that model-based AL did not beat random/Sobol;
   (2) MODEL_CARD "known behaviour" bullets; (3) LIMITATIONS: strength range 2-12 MPa,
   UT inaccuracy, GP under-coverage, conformal OOD coverage loss.
+
+## 2026-10-28 04:05 — results in, README drafted
+- First full run: E2 219 s, E1 159 s, E1b 614 s; E3 crashed (seed with only 4 successful initial
+  jobs). Added fallback (defaults + random until 5 successes), documented as deviation §8.7.
+- Profiling: success-classifier predict_proba was ~53 % of optimiser time, half of it for
+  nominal statistics not needed by other objectives. Computing only what each objective needs gave
+  bit-identical E1 results (diffed) and 2.7x speed-up. Clean full rerun launched 03:59 to get one
+  consistent manifest and to check reproducibility against run 1.
+- Central result (synthetic): with a learned model, robust objectives are NOT significantly better
+  than nominal (all Holm p = 1); CVaR/quantile even lower q05 strength. With the oracle they halve
+  failures (17.6 % → 9.6 %). Explanation found in E4: learned model's noise variance ~24x truth,
+  composition share 19-22 % vs 84 % in truth.
+- AL: no strategy distinguishable from random within 52 jobs. UT inaccurate on ground truth.
+- README written from run-1 numbers; to be verified against clean run (scripts/readme_numbers.py).

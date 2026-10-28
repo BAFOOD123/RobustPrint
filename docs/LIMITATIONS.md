@@ -19,7 +19,9 @@ Read this before quoting any number from this repository.
   made before any model or optimiser experiment was run, but it means the synthetic
   benefit is partly *built in*. Whether real recycled feedstock has such interactions, and
   how strong they are, is an empirical question.
-- Modelled tensile strengths (roughly 2–12 MPa) are low compared with virgin filament.
+- Modelled tensile strengths are low compared with virgin filament: successful jobs in a
+  space-filling campaign range from about 0.4 to 10 MPa (median about 3 MPa), and the best
+  settings reach a mean of about 9.4 MPa on fresh batches.
   This reflects the assumed immiscibility, contaminants and degradation; it is not a
   prediction for any real material.
 

@@ -216,10 +216,12 @@ simulator was frozen before the pilot (ADR-012); after the pilot only runtime se
    crashed. We added a fallback that was not in the protocol: until 5 jobs have succeeded,
    the "recommendation" is the default settings and new jobs are chosen at random, for
    every strategy. Rows carry a `has_model` flag.
-2. **Stages run separately.** E2, E1 and E1b come from the first full run (code at commit
-   `11786a7`). E3–E7 were re-run with the fixed code (`robustprint reproduce --full --only
-   e3,e4,e5,e6,e7`). Every stage is seeded independently, so this does not change E1/E2/E1b.
-   `results/full/manifest.json` records the git state per stage.
+2. **Final results come from a clean re-run.** After fixing the crash, and after a speed-up
+   that does not change any number (the optimiser no longer computes statistics an
+   objective does not use), the full configuration was re-run from an empty folder at commit
+   `27e1a57` (`results/full/manifest.json`). All E1, E1b, E2, E5, E6 and E7 files of that
+   run are byte-identical to the first run's, E3–E4 match the separate re-run of those
+   stages, and the only differences are wall-clock timings.
 3. **Additional exploratory analyses (not pre-registered):** paired tests of the oracle
    settings against the oracle-nominal setting (`e1_optimisation/tests_oracle_exploratory.csv`,
    where only deployment batches vary between seeds); descriptive paired differences of

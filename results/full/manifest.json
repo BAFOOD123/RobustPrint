@@ -98,32 +98,47 @@
     "matplotlib": "3.11.2"
   },
   "timings_s": {
-    "E3 active learning": 119.3,
-    "E4 propagation": 186.2,
-    "E5 sensitivity": 3.6,
-    "E6 Pareto": 126.1,
-    "E7 public data": 105.2
+    "E2 model comparison": 211.3,
+    "E1 robust vs nominal": 57.6,
+    "E1b ablations": 261.9,
+    "E3 active learning": 89.3,
+    "E4 propagation": 164.4,
+    "E5 sensitivity": 2.4,
+    "E6 Pareto": 67.8,
+    "E7 public data": 104.6
   },
   "stage_git": {
+    "E2 model comparison": {
+      "commit": "27e1a57003199bc556066c4895d27d408b8468df",
+      "source_dirty": false
+    },
+    "E1 robust vs nominal": {
+      "commit": "27e1a57003199bc556066c4895d27d408b8468df",
+      "source_dirty": false
+    },
+    "E1b ablations": {
+      "commit": "27e1a57003199bc556066c4895d27d408b8468df",
+      "source_dirty": false
+    },
     "E3 active learning": {
-      "commit": "15906be8e87b7ecd9827c415d467456fd616e5af",
-      "source_dirty": true
+      "commit": "27e1a57003199bc556066c4895d27d408b8468df",
+      "source_dirty": false
     },
     "E4 propagation": {
-      "commit": "15906be8e87b7ecd9827c415d467456fd616e5af",
-      "source_dirty": true
+      "commit": "27e1a57003199bc556066c4895d27d408b8468df",
+      "source_dirty": false
     },
     "E5 sensitivity": {
-      "commit": "15906be8e87b7ecd9827c415d467456fd616e5af",
-      "source_dirty": true
+      "commit": "27e1a57003199bc556066c4895d27d408b8468df",
+      "source_dirty": false
     },
     "E6 Pareto": {
-      "commit": "15906be8e87b7ecd9827c415d467456fd616e5af",
-      "source_dirty": true
+      "commit": "27e1a57003199bc556066c4895d27d408b8468df",
+      "source_dirty": false
     },
     "E7 public data": {
-      "commit": "15906be8e87b7ecd9827c415d467456fd616e5af",
-      "source_dirty": true
+      "commit": "27e1a57003199bc556066c4895d27d408b8468df",
+      "source_dirty": false
     }
   },
   "public_data_available": true,

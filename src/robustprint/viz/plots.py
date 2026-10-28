@@ -272,7 +272,8 @@ def active_learning_curves(res: Path, out: Path) -> list[Path]:
             ax.plot(x, mean, color=PALETTE[i], marker="o", ms=4, label=strategy)
             ax.fill_between(x, cis[:, 0], cis[:, 1], color=PALETTE[i], alpha=0.10, lw=0)
         ax.set(xlabel="print jobs run", ylabel=ylabel, title=title)
-    axes[1].legend(fontsize=8)
+    handles, labels = axes[1].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=len(labels), fontsize=8.5, bbox_to_anchor=(0.5, 0.0))
     fig.suptitle(
         "Sequential experimentation: quality of the robust recommendation (lower is better)",
         x=0.01,
@@ -280,7 +281,7 @@ def active_learning_curves(res: Path, out: Path) -> list[Path]:
         fontsize=12,
         fontweight="bold",
     )
-    fig.tight_layout(rect=(0, 0.04, 1, 0.94))
+    fig.tight_layout(rect=(0, 0.08, 1, 0.94))
     return _save(fig, out, "active_learning")
 
 
@@ -304,19 +305,10 @@ def pareto(res: Path, out: Path) -> list[Path]:
             label=f"{obj}: realised CVaR(10%)",
         )
         axes[1].scatter(d["print_time"], d["expected_utility"], color=PALETTE[i], marker="s", s=22, alpha=0.6)
-        for _, row in d.iterrows():
-            axes[0].annotate(
-                f"E={row['energy']:.1f}",
-                (row["print_time"], row["pred_cvar"]),
-                fontsize=6.5,
-                color=INK_2,
-                xytext=(3, 3),
-                textcoords="offset points",
-            )
     axes[0].set(
         xlabel="relative print time",
         ylabel="predicted CVaR(10%) strength (MPa)",
-        title="Trade-off: robust strength vs print time",
+        title="Trade-off: robust strength vs print time (energy in front.csv)",
     )
     axes[1].set(
         xlabel="relative print time",
@@ -393,9 +385,10 @@ def sensitivity(res: Path, out: Path) -> list[Path]:
     _style()
     s = read_csv(res / "e5_sensitivity" / "global.csv")
     s = s[s["source"] == "ground_truth"]
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
+    order = s[s["output"] == "log_strength"].sort_values("total")["input"].tolist()
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
     for ax, output, title in ((axes[0], "log_strength", "log strength"), (axes[1], "p_success", "P(success)")):
-        d = s[s["output"] == output].sort_values("total")
+        d = s[s["output"] == output].set_index("input").loc[order].reset_index()
         y = np.arange(len(d))
         ax.barh(y + 0.2, d["total"], height=0.38, color=PALETTE[0], label="total index", edgecolor=SURFACE)
         ax.barh(
