@@ -80,54 +80,62 @@ def _ci(values: np.ndarray, rng: np.random.Generator, n: int = 2000) -> tuple[fl
 
 
 def hero(res: Path, out: Path) -> list[Path]:
-    """Two-panel summary of E1: failure rate and expected utility by objective, with 95 % CIs."""
+    """Summary of E1: nominal vs composition-aware objectives, learned model vs perfect model."""
     _style()
     df = read_csv(res / "e1_optimisation" / "per_seed.csv")
-    methods = [m for m in [*METHOD_ORDER, "oracle_expected"] if m in df["method"].unique()]
     rng = np.random.default_rng(0)
-    fig, axes = plt.subplots(1, 3, figsize=(12.5, 3.9))
+    methods = ["nominal", "expected", "cvar"]
+    groups = [("learned model\n(240 synthetic jobs)", ""), ("perfect model\n(ground-truth oracle)", "oracle_")]
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4.1))
     panels = [
-        ("failure_rate", "Failure rate on fresh batches", "fraction of prints that fail", 100.0, "%"),
-        ("q05_strength", "Weakest 5 % of printed parts", "5th percentile strength (MPa)", 1.0, ""),
-        ("expected_utility", "Expected utility", "mean strength, failed part = 0 (MPa)", 1.0, ""),
+        ("failure_rate", "Failed prints on unseen batches", "failure rate (%)", 100.0),
+        ("q05_strength", "Weakest 5 % of printed parts", "5th-percentile strength (MPa)", 1.0),
+        ("expected_utility", "Expected utility", "mean strength, failed part = 0 (MPa)", 1.0),
     ]
-    for ax, (metric, title, ylabel, scale, unit) in zip(axes, panels, strict=True):
-        for i, m in enumerate(methods):
-            v = df.loc[df["method"] == m, metric].to_numpy() * scale
-            lo, hi = _ci(v, rng)
-            color = METHOD_COLOR.get(m, INK_2)
-            ax.bar(
-                i,
-                v.mean(),
-                width=0.62,
-                color=color,
-                alpha=0.9 if not m.startswith("oracle") else 0.35,
-                edgecolor=SURFACE,
-                linewidth=2,
-            )
-            ax.errorbar(i, v.mean(), yerr=[[v.mean() - lo], [hi - v.mean()]], color=INK, capsize=3, lw=1.2)
-            ax.text(
-                i,
-                hi,
-                f"{v.mean():.1f}{unit}" if scale != 1 else f"{v.mean():.2f}",
-                ha="center",
-                va="bottom",
-                fontsize=8,
-                color=INK,
-            )
-        ax.set_xticks(range(len(methods)), [METHOD_LABEL.get(m, m) for m in methods], rotation=30, ha="right")
+    width = 0.26
+    for ax, (metric, title, ylabel, scale) in zip(axes, panels, strict=True):
+        for gi, (_, prefix) in enumerate(groups):
+            for mi, m in enumerate(methods):
+                v = df.loc[df["method"] == prefix + m, metric].to_numpy() * scale
+                if v.size == 0:
+                    continue
+                lo, hi = _ci(v, rng)
+                x = gi + (mi - 1) * width
+                ax.bar(
+                    x,
+                    v.mean(),
+                    width=width,
+                    color=METHOD_COLOR[m],
+                    edgecolor=SURFACE,
+                    linewidth=2,
+                    label=METHOD_LABEL[m] if gi == 0 else None,
+                )
+                ax.errorbar(x, v.mean(), yerr=[[v.mean() - lo], [hi - v.mean()]], color=INK, capsize=2.5, lw=1.1)
+                ax.text(x, hi, f"{v.mean():.1f}", ha="center", va="bottom", fontsize=7.5, color=INK)
+        ax.set_xticks(range(len(groups)), [g[0] for g in groups])
         ax.set_title(title)
         ax.set_ylabel(ylabel)
         ax.grid(axis="x", visible=False)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="upper right",
+        ncol=3,
+        fontsize=8.5,
+        title="objective",
+        title_fontsize=8.5,
+        bbox_to_anchor=(0.995, 0.995),
+    )
     n_seeds = df["seed"].nunique()
     fig.suptitle(
-        f"Robust vs nominal print settings, deployed on unseen batches ({n_seeds} seeds, mean ± 95 % CI)",
+        f"Robust vs nominal settings on unseen feedstock batches ({n_seeds} seeds, mean ± 95 % CI)",
         x=0.01,
         ha="left",
         fontsize=12,
         fontweight="bold",
     )
-    fig.tight_layout(rect=(0, 0.03, 1, 0.95))
+    fig.tight_layout(rect=(0, 0.03, 1, 0.9))
     return _save(fig, out, "hero")
 
 
@@ -247,30 +255,32 @@ def reliability(res: Path, out: Path) -> list[Path]:
 
 
 def active_learning_curves(res: Path, out: Path) -> list[Path]:
-    """Regret of the CVaR recommendation vs experiments and vs cost, mean ± 95 % CI."""
+    """Regret of the CVaR recommendation after each round, mean ± 95 % CI over seeds."""
     _style()
     al = read_csv(res / "e3_active_learning" / "per_round.csv")
     rng = np.random.default_rng(0)
     fig, axes = plt.subplots(1, 2, figsize=(11.5, 4))
-    for i, (strategy, d) in enumerate(al.groupby("strategy", sort=False)):
-        g = d.groupby("n_jobs")
-        x = np.array(sorted(d["n_jobs"].unique()))
-        mean = g["regret"].mean().reindex(x).to_numpy()
-        cis = np.array([_ci(d.loc[d["n_jobs"] == n, "regret"].to_numpy(), rng) for n in x])
-        axes[0].plot(x, mean, color=PALETTE[i], marker="o", ms=4, label=strategy)
-        axes[0].fill_between(x, cis[:, 0], cis[:, 1], color=PALETTE[i], alpha=0.12, lw=0)
-        cost = g["cumulative_cost"].mean().reindex(x).to_numpy()
-        axes[1].plot(cost, mean, color=PALETTE[i], marker="o", ms=4, label=strategy)
-    axes[0].set(
-        xlabel="print jobs run",
-        ylabel="regret of true CVaR score (MPa)",
-        title="Sequential experiments: regret vs jobs",
+    panels = (
+        ("regret", "pre-registered: regret of penalised CVaR score", "regret (MPa, incl. success penalty)"),
+        ("regret_expected_utility", "regret of expected utility vs oracle", "regret (MPa)"),
     )
-    axes[1].set(
-        xlabel="cumulative relative cost", ylabel="regret of true CVaR score (MPa)", title="Regret vs experimental cost"
+    for ax, (metric, title, ylabel) in zip(axes, panels, strict=True):
+        for i, (strategy, d) in enumerate(al.groupby("strategy", sort=False)):
+            x = np.array(sorted(d["n_jobs"].unique()))
+            mean = d.groupby("n_jobs")[metric].mean().reindex(x).to_numpy()
+            cis = np.array([_ci(d.loc[d["n_jobs"] == n, metric].to_numpy(), rng) for n in x])
+            ax.plot(x, mean, color=PALETTE[i], marker="o", ms=4, label=strategy)
+            ax.fill_between(x, cis[:, 0], cis[:, 1], color=PALETTE[i], alpha=0.10, lw=0)
+        ax.set(xlabel="print jobs run", ylabel=ylabel, title=title)
+    axes[1].legend(fontsize=8)
+    fig.suptitle(
+        "Sequential experimentation: quality of the robust recommendation (lower is better)",
+        x=0.01,
+        ha="left",
+        fontsize=12,
+        fontweight="bold",
     )
-    axes[0].legend(fontsize=8)
-    fig.tight_layout(rect=(0, 0.04, 1, 1))
+    fig.tight_layout(rect=(0, 0.04, 1, 0.94))
     return _save(fig, out, "active_learning")
 
 

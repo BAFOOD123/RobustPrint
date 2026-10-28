@@ -1,0 +1,8 @@
+# SYNTHETIC DATA (RobustPrint simulator) - not experimental results
+component,first_order_log_strength,first_order_p_success,spearman_log_strength
+pe,0.222076,0.288405,0.472347
+pet,0.0540253,0.0977388,0.230838
+pa,0.133189,0.133078,0.377115
+fiber,0.0223871,0.471439,0.0280895
+contaminant,0.488241,0.0378858,-0.702194
+moisture,0.246755,0.00109416,-0.453772

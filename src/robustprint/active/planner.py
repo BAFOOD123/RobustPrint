@@ -35,7 +35,7 @@ def candidate_pool(
 
 
 def select_experiments(
-    predictor: ModelPredictor,
+    predictor: ModelPredictor | None,
     feedstock: Feedstock,
     n: int,
     strategy: str,
@@ -56,6 +56,8 @@ def select_experiments(
             params = low + rng.random(params.shape) * (high - low)
         idx = np.arange(n)
         return comp[idx], moist[idx], params[idx], np.full(n, np.nan)
+    if predictor is None:
+        raise ValueError(f"Strategy {strategy!r} needs a fitted predictor.")
     model = predictor.strength_model
     if not isinstance(model, GPRegressor):
         raise TypeError("Model-based acquisition requires a GP-family strength model.")

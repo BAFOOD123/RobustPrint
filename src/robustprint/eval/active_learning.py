@@ -16,7 +16,7 @@ from robustprint.optimize.objectives import ObjectiveSettings, RobustProblem
 from robustprint.optimize.robust import recommend
 from robustprint.physics.composition import FloatArray
 from robustprint.physics.simulator import DEFAULT_CONFIG, ISS_NOMINAL, Batches, realise
-from robustprint.pipeline import train_predictor
+from robustprint.pipeline import MIN_STRENGTH_ROWS, train_predictor
 from robustprint.uncertainty.propagation import OraclePredictor
 
 #: Dirichlet concentration of the error between a target blend and the blend actually made.
@@ -87,7 +87,12 @@ def true_value(params: FloatArray, oracle: RobustProblem) -> dict[str, float]:
 
 
 def run_al_task(task: ALTask) -> list[dict[str, object]]:
-    """Run one sequential campaign and record the true quality of each round's recommendation."""
+    """Run one sequential campaign and record the true quality of each round's recommendation.
+
+    Until at least ``MIN_STRENGTH_ROWS`` jobs have printed successfully no model can be fitted;
+    the recommendation is then the default settings and new jobs are chosen at random
+    (protocol deviation, METHODS.md section 8.7).
+    """
     s = seed_for(task.base_seed, 3, task.seed_index)
     rng = np.random.default_rng(s + 1)
     n_init_batches = max(task.initial_jobs // 4, 1)
@@ -100,9 +105,13 @@ def run_al_task(task: ALTask) -> list[dict[str, object]]:
     total = task.rounds * task.batch_size
     sobol_comp, sobol_moist, sobol_params = candidate_pool(ISS_NOMINAL, total, np.random.default_rng(s + 4))
     for round_index in range(task.rounds + 1):
-        predictor = train_predictor(data, "hybrid_gp", seed=s, gp_restarts=1)
-        problem = RobustProblem(predictor, ISS_NOMINAL, ObjectiveSettings(), task.n_compositions, 8, seed=s + 2)
-        rec = recommend(problem, TRACKED_OBJECTIVE, budget=task.budget, seed=s + 3).params
+        has_model = int(data.strength_rows.sum()) >= MIN_STRENGTH_ROWS
+        if has_model:
+            predictor = train_predictor(data, "hybrid_gp", seed=s, gp_restarts=1)
+            problem = RobustProblem(predictor, ISS_NOMINAL, ObjectiveSettings(), task.n_compositions, 8, seed=s + 2)
+            rec = recommend(problem, TRACKED_OBJECTIVE, budget=task.budget, seed=s + 3).params
+        else:
+            rec = space.defaults()
         rows.append(
             {
                 "seed": task.seed_index,
@@ -111,6 +120,7 @@ def run_al_task(task: ALTask) -> list[dict[str, object]]:
                 "n_jobs": len(data),
                 "n_strength_rows": int(data.strength_rows.sum()),
                 "cumulative_cost": cumulative_cost,
+                "has_model": has_model,
                 **true_value(rec, oracle),
                 **{f"x_{i}": float(v) for i, v in enumerate(rec)},
             }
@@ -122,10 +132,10 @@ def run_al_task(task: ALTask) -> list[dict[str, object]]:
             comp, moist, params = sobol_comp[sl], sobol_moist[sl], sobol_params[sl]
         else:
             comp, moist, params, _ = select_experiments(
-                predictor,
+                predictor if has_model else None,
                 ISS_NOMINAL,
                 task.batch_size,
-                task.strategy,
+                task.strategy if has_model else "random",
                 rng,
                 recommended=rec,
                 n_candidates=task.candidates,

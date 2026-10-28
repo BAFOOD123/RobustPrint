@@ -1,0 +1,8 @@
+parameter,spearman_data,gp_partial_effect_log,simulator_direction
+layer_height_mm,0.351242,0.278407,1
+wall_thickness_mm,0.42593,0.431923,
+infill_pct,0.324226,0.575118,1
+nozzle_temp_C,-0.390178,-7.44431e-06,1
+bed_temp_C,-0.243319,-0.204747,1
+print_speed_mm_s,-0.238123,-0.154566,1
+cooling_fan_pct,-0.243319,-0.204747,-1

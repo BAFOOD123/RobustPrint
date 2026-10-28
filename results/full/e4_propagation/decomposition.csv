@@ -1,0 +1,8 @@
+# SYNTHETIC DATA (RobustPrint simulator) - not experimental results
+model,setting,mean_log,var_input,var_epistemic,var_aleatoric,p_success,share_input,share_epistemic,share_aleatoric
+hybrid_gp,nominal,2.04395,0.119178,0.0672813,0.358552,0.869091,0.21867,0.123449,0.657881
+hybrid_gp,cvar,2.0539,0.099666,0.0601643,0.358552,0.88322,0.192263,0.116062,0.691675
+deep_ensemble,nominal,1.82877,0.0522335,0.0193371,0.49641,0.869091,0.0919636,0.0340454,0.873991
+deep_ensemble,cvar,1.94179,0.0497756,0.0136537,0.483072,0.88322,0.0910806,0.0249838,0.883936
+ground_truth,nominal,2.0921,0.0788192,0,0.0145169,0.880931,0.844467,0,0.155533
+ground_truth,cvar,2.1368,0.0793352,0,0.015067,0.8698,0.840396,0,0.159604

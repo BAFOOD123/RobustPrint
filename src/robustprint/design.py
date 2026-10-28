@@ -38,8 +38,9 @@ def _maximin_lhs(n: int, d: int, seed: int, tries: int = 200) -> np.ndarray:
     return best
 
 
-def starter_design(n_settings: int = 12, repeat_settings: int = 4, n_batches: int = 3, replicates: int = 3,
-                   seed: int = 0) -> pd.DataFrame:
+def starter_design(
+    n_settings: int = 12, repeat_settings: int = 4, n_batches: int = 3, replicates: int = 3, seed: int = 0
+) -> pd.DataFrame:
     """Maximin LHS over four bonding-related factors, rounded to printer-friendly steps.
 
     Batch 1 gets all ``n_settings``; later batches repeat the ``repeat_settings`` settings
@@ -48,7 +49,7 @@ def starter_design(n_settings: int = 12, repeat_settings: int = 4, n_batches: in
     """
     u = _maximin_lhs(n_settings, len(STARTER_FACTORS), seed)
     rows = []
-    for k, (name, (lo, hi, step)) in enumerate(STARTER_FACTORS.items()):
+    for k, (lo, hi, step) in enumerate(STARTER_FACTORS.values()):
         values = lo + u[:, k] * (hi - lo)
         rows.append(np.round(values / step) * step)
     settings = np.column_stack(rows)

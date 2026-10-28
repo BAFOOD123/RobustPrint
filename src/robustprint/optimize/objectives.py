@@ -86,8 +86,8 @@ class RobustProblem:
         self.nominal_composition = feedstock.mean_array()[None, :]
         self.nominal_moisture = np.array([feedstock.moisture_median_pct])
 
-    def statistics(self, params: FloatArray) -> dict[str, FloatArray]:
-        """Robust statistics for each row of ``params`` (P, 8)."""
+    def mixture_statistics(self, params: FloatArray) -> dict[str, FloatArray]:
+        """Statistics over the feedstock distribution for each row of ``params`` (P, 8)."""
         params = np.atleast_2d(params)
         P, K = params.shape[0], len(self.samples)
         comp = np.tile(self.samples.composition, (P, 1))
@@ -101,26 +101,37 @@ class RobustProblem:
         S = self.normals.shape[1]
         w = np.repeat(np.maximum(p, 1e-9), S, axis=1)
         s = self.settings
-        nominal_pred, nominal_p = self.predictor.predict(
-            np.repeat(self.nominal_composition, P, axis=0), np.repeat(self.nominal_moisture, P), params
-        )
         return {
             "mean": np.sum(w * strength, axis=1) / np.sum(w, axis=1),
             "quantile": weighted_quantile(strength, w, s.quantile_level),
             "cvar": weighted_cvar(strength, w, s.cvar_alpha),
             "p_exceed": np.sum(w * (strength >= s.chance_threshold_MPa), axis=1) / np.sum(w, axis=1),
             "p_success": p.mean(axis=1),
-            "nominal_mean": np.exp(nominal_pred.mean + 0.5 * nominal_pred.var),
-            "nominal_p_success": nominal_p,
         }
 
+    def nominal_statistics(self, params: FloatArray) -> dict[str, FloatArray]:
+        """Predicted mean strength and success at the mean composition and median moisture."""
+        params = np.atleast_2d(params)
+        P = params.shape[0]
+        pred, p = self.predictor.predict(
+            np.repeat(self.nominal_composition, P, axis=0), np.repeat(self.nominal_moisture, P), params
+        )
+        return {"nominal_mean": np.exp(pred.mean + 0.5 * pred.var), "nominal_p_success": p}
+
+    def statistics(self, params: FloatArray) -> dict[str, FloatArray]:
+        """All robust and nominal statistics for each row of ``params`` (P, 8)."""
+        return {**self.mixture_statistics(params), **self.nominal_statistics(params)}
+
     def score(self, objective: str, params: FloatArray) -> FloatArray:
-        """Penalised objective value to maximise."""
-        st = self.statistics(params)
+        """Penalised objective value to maximise (computes only what the objective needs)."""
         s = self.settings
         pen = s.penalty_MPa
         if objective == "nominal":
-            return st["nominal_mean"] - pen * np.maximum(0.0, s.p_min - st["nominal_p_success"])
+            nom = self.nominal_statistics(params)
+            return nom["nominal_mean"] - pen * np.maximum(0.0, s.p_min - nom["nominal_p_success"])
+        if objective not in OBJECTIVES:
+            raise ValueError(f"Unknown objective {objective!r}; choose one of {OBJECTIVES}.")
+        st = self.mixture_statistics(params)
         success_pen = pen * np.maximum(0.0, s.p_min - st["p_success"])
         if objective == "expected":
             return st["mean"] - success_pen
@@ -128,6 +139,4 @@ class RobustProblem:
             return st["quantile"] - success_pen
         if objective == "cvar":
             return st["cvar"] - success_pen
-        if objective == "chance":
-            return st["mean"] - success_pen - pen * np.maximum(0.0, s.chance_prob - st["p_exceed"])
-        raise ValueError(f"Unknown objective {objective!r}; choose one of {OBJECTIVES}.")
+        return st["mean"] - success_pen - pen * np.maximum(0.0, s.chance_prob - st["p_exceed"])

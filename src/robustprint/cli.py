@@ -232,16 +232,18 @@ def reproduce(
     config: Annotated[Path | None, typer.Option(help="Explicit YAML config (overrides --fast/--full).")] = None,
     results: Annotated[Path, typer.Option(help="Results root folder.")] = Path("results"),
     figures: bool = True,
+    only: Annotated[str | None, typer.Option(help="Comma-separated stages, e.g. 'e3,e4' (default: all).")] = None,
 ) -> None:
     """Run all experiments of a configuration and write results/<name>/."""
     from robustprint.config import load_config
-    from robustprint.eval.reproduce import run_all
+    from robustprint.eval.reproduce import STAGES, run_all
 
     path = config or Path("configs") / ("fast.yaml" if fast else "full.yaml")
     cfg = load_config(path)
     out = results / cfg.name
     t0 = time.perf_counter()
-    run_all(cfg, out)
+    stages = tuple(x.strip() for x in only.split(",")) if only else STAGES
+    run_all(cfg, out, stages=stages)
     if figures:
         from robustprint.viz.plots import all_figures
 

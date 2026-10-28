@@ -1,0 +1,16 @@
+{
+  "label": "SYNTHETIC DATA (RobustPrint simulator) - not experimental results",
+  "true_cvar": 5.427178,
+  "true_p_success": 0.900014,
+  "true_expected_utility": 8.515534,
+  "true_score": 5.427178,
+  "nozzle_temp_C": 262.585706,
+  "bed_temp_C": 109.99839,
+  "print_speed_mm_s": 11.139757,
+  "layer_height_mm": 0.156456,
+  "infill_pct": 99.99992,
+  "raster_angle_deg": 0.189911,
+  "flow_rate_pct": 100.84799,
+  "cooling_fan_pct": 0.001603,
+  "best_score_reference": 5.427178
+}

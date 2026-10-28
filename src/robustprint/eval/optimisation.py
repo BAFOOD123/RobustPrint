@@ -288,10 +288,14 @@ def run_variants(
     return frame
 
 
-def summarise(frame: pd.DataFrame, reference: str = "nominal") -> tuple[pd.DataFrame, pd.DataFrame]:
+def summarise(
+    frame: pd.DataFrame, reference: str = "nominal", oracle_methods: bool = False
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Bootstrap CIs per method and Holm-corrected paired tests against ``reference``.
 
-    The Holm family is every (method, metric) comparison within one variant.
+    The Holm family is every (method, metric) comparison within one variant. With
+    ``oracle_methods`` the comparison is among the oracle settings instead of the
+    model-based ones (exploratory analysis; not part of the pre-registered protocol).
     """
     summary_rows = []
     tests = []
@@ -317,7 +321,7 @@ def summarise(frame: pd.DataFrame, reference: str = "nominal") -> tuple[pd.DataF
         ref = vf[vf["method"] == reference].sort_values("seed")
         family = []
         for method in methods:
-            if method == reference or method.startswith("oracle"):
+            if method == reference or method.startswith("oracle") != oracle_methods:
                 continue
             mf = vf[vf["method"] == method].sort_values("seed")
             common = np.intersect1d(mf["seed"], ref["seed"])
@@ -327,3 +331,39 @@ def summarise(frame: pd.DataFrame, reference: str = "nominal") -> tuple[pd.DataF
                 family.append(paired_comparison(a[metric].to_numpy(), b[metric].to_numpy(), metric, method, reference))
         tests += [{"variant": variant, **c.as_dict()} for c in with_holm(family)]
     return pd.DataFrame(summary_rows), pd.DataFrame(tests)
+
+
+def compare_to_main(
+    main: pd.DataFrame, ablations: pd.DataFrame, metrics: tuple[str, ...] = DEPLOY_METRICS
+) -> pd.DataFrame:
+    """Paired differences (variant - main) for the same method and seed (same training data).
+
+    Descriptive only (bootstrap CIs, no tests), as specified in METHODS.md section 8.4.
+    Variants that change the world (spread, noise, deployment feedstock) are not comparable
+    with the main run and are skipped.
+    """
+    worldly = {"true_spread_x2", "ood_deploy_shifted"} | {
+        v for v in ablations["variant"].unique() if v.startswith("label_noise")
+    }
+    rows = []
+    for (variant, method), vf in ablations.groupby(["variant", "method"], sort=False):
+        if variant in worldly or str(method).startswith("oracle"):
+            continue
+        ref = main[main["method"] == method].set_index("seed")
+        a = vf.set_index("seed")
+        common = a.index.intersection(ref.index)
+        for metric in metrics:
+            d = (a.loc[common, metric] - ref.loc[common, metric]).to_numpy()
+            est, lo, hi = bootstrap_ci(d)
+            rows.append(
+                {
+                    "variant": variant,
+                    "method": method,
+                    "metric": metric,
+                    "n_seeds": len(common),
+                    "mean_diff_vs_main": est,
+                    "ci_low": lo,
+                    "ci_high": hi,
+                }
+            )
+    return pd.DataFrame(rows)
