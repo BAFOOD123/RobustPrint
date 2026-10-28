@@ -21,3 +21,15 @@ Timestamped log of work on RobustPrint. Times are UTC (container clock).
   less temperature-sensitive. Also moderated unmelted-polymer clogging so a space-filling design has
   ~43 % print success (was ~26 %). Simulator frozen after this point (v1.0).
 - Next: schema doc, tests for physics/data, then models.
+
+## 2026-10-28 ~04:10 — Phase 3/4 implementation
+- Models implemented; first CV benchmark (synthetic): deep ensemble/MC dropout badly overconfident
+  (NLL 4-7) until early stopping on a validation split was added (ADR-015); GP learned ~zero noise
+  and under-covered → 3 % CV noise floor (ADR-014). Logistic poly-2 success model worse than base
+  rate at C=1 → C=0.03; GBM+isotonic remains better and is the default.
+- Robust objectives (MC + CRN), CMA-ES optimiser with safe nozzle window, deployment evaluator,
+  oracle predictor, active-learning acquisitions (max-variance, targeted IVR, cost-aware IVR).
+- Pilot E1 (8 seeds): robust objectives lower failure rate (~0.15 → ~0.10); no clear change in
+  expected utility; model-based recommendations far from oracle (regret ~1.6-2.0 MPa).
+- Found worker thread oversubscription (load 15 on 4 cores) → threadpoolctl pinning.
+- Pre-registered protocol in docs/METHODS.md §8 before final runs.
