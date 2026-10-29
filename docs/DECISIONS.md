@@ -183,3 +183,29 @@ Short records: problem, options, choice, reason. Numbered in the order they were
 - **Reason:** in the pre-protocol benchmark it had among the best NLL/CRPS, it separates
   epistemic from aleatoric variance, and its closed-form posterior covariance enables exact
   batch active learning. The choice was made before the final runs.
+
+## ADR-020 — Browser Virtual Lab as a TypeScript re-implementation
+- **Problem:** the study should be explorable without installing Python, and a lab should be
+  able to try its own CSV in the browser without uploading it anywhere.
+- **Options:** Pyodide (Python + scikit-learn in WebAssembly, ~30 MB download, slow start);
+  a server (hosting cost, data leaves the browser); a TypeScript port of the parts needed.
+- **Choice:** port the simulator, compositional transforms, the physics-residual GP, the
+  `gbm_isotonic` success classifier, the robust objectives, CMA-ES and the batch
+  active-learning strategies to TypeScript (`web/src/engine`), run them in a Web Worker, and
+  ship a single self-contained HTML file. Deep ensembles, MC dropout and conformal wrappers
+  are not ported; the Study step shows their pre-computed results instead.
+- **Verification:** golden files written by `scripts/export_web_golden.py` from the Python
+  code. The simulator agrees to 1e-9 relative on 400 random rows, the ilr transform to 1e-10 and
+  Dirichlet ilr moments to 1e-8, GP predictions with fixed hyperparameters to 1e-7, isotonic regression exactly and
+  raw boosted scores to ~0.04 in log-odds on average (float32 histograms and tie-breaking in
+  scikit-learn). Hyperparameter fitting (Adam vs L-BFGS) and the classifier's CV folds differ,
+  so fitted models agree statistically, not bit for bit: the calibrated classifier's error
+  against the true P(success) is within 2 % of scikit-learn's on the golden data set.
+- **Consequence:** numbers produced in the browser are a second implementation of the same
+  method, not the study. Only the Study step reports the pre-registered results, and it
+  reads them from `results/full`.
+- **Found while porting:** an earlier browser version used the logistic classifier for speed;
+  it invented a raster-angle effect on print failure (none exists in the simulator), which
+  pushed learned-model recommendations to 90°. Search budgets below the study's (300–900
+  evaluations) also left CMA-ES unconverged. Both were fixed before release (boosted trees;
+  800 / 1 500 / 3 000 evaluations).

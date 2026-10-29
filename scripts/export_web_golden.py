@@ -16,8 +16,23 @@ from robustprint.physics.composition import dirichlet_ilr_moments, ilr, ilr_inve
 from robustprint.physics.simulator import ISS_NOMINAL, true_outcomes
 
 OUT = Path(__file__).resolve().parents[1] / "web" / "tests" / "golden"
-KEYS = ["strength_MPa", "modulus_GPa", "elongation_pct", "p_success", "p_clog", "p_warp", "noise_cv", "bond",
-        "porosity", "extrusion", "immiscibility", "degradation", "unmelted", "fiber_volume", "inclusion_volume"]
+KEYS = [
+    "strength_MPa",
+    "modulus_GPa",
+    "elongation_pct",
+    "p_success",
+    "p_clog",
+    "p_warp",
+    "noise_cv",
+    "bond",
+    "porosity",
+    "extrusion",
+    "immiscibility",
+    "degradation",
+    "unmelted",
+    "fiber_volume",
+    "inclusion_volume",
+]
 
 
 def main() -> None:
@@ -32,21 +47,47 @@ def main() -> None:
     moisture = np.exp(rng.normal(np.log(0.3), 0.8, n))
     effect = rng.normal(0, 0.05, n)
     out = true_outcomes(comp, params, moisture, effect)
-    rows = [{"composition": comp[i].tolist(), "params": params[i].tolist(), "moisture": float(moisture[i]),
-             "batch_effect": float(effect[i]), **{k: float(out[k][i]) for k in KEYS},
-             "print_time": float(process.print_time_proxy(params[i:i + 1, 2], params[i:i + 1, 3], params[i:i + 1, 4])[0]),
-             "energy": float(process.energy_proxy(params[i:i + 1, 0], params[i:i + 1, 1], params[i:i + 1, 2],
-                                                  params[i:i + 1, 3], params[i:i + 1, 4])[0])}
-            for i in range(n)]
+    rows = [
+        {
+            "composition": comp[i].tolist(),
+            "params": params[i].tolist(),
+            "moisture": float(moisture[i]),
+            "batch_effect": float(effect[i]),
+            **{k: float(out[k][i]) for k in KEYS},
+            "print_time": float(
+                process.print_time_proxy(params[i : i + 1, 2], params[i : i + 1, 3], params[i : i + 1, 4])[0]
+            ),
+            "energy": float(
+                process.energy_proxy(
+                    params[i : i + 1, 0],
+                    params[i : i + 1, 1],
+                    params[i : i + 1, 2],
+                    params[i : i + 1, 3],
+                    params[i : i + 1, 4],
+                )[0]
+            ),
+        }
+        for i in range(n)
+    ]
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "simulator.json").write_text(json.dumps(rows))
     z = ilr(comp[:50])
     alpha = 35 * ISS_NOMINAL.mean_array()
     m, c = dirichlet_ilr_moments(alpha)
-    (OUT / "composition.json").write_text(json.dumps({
-        "composition": comp[:50].tolist(), "ilr": z.tolist(), "ilr_inverse": ilr_inverse(z).tolist(),
-        "alpha": alpha.tolist(), "ilr_mean": m.tolist(), "ilr_cov": c.tolist()}))
+    (OUT / "composition.json").write_text(
+        json.dumps(
+            {
+                "composition": comp[:50].tolist(),
+                "ilr": z.tolist(),
+                "ilr_inverse": ilr_inverse(z).tolist(),
+                "alpha": alpha.tolist(),
+                "ilr_mean": m.tolist(),
+                "ilr_cov": c.tolist(),
+            }
+        )
+    )
     export_gp()
+    export_gbm()
     print(f"wrote {OUT}")
 
 
@@ -54,8 +95,8 @@ def export_gp() -> None:
     """Fit the Python hybrid GP on a small campaign and export data, hyperparameters, predictions."""
     from robustprint.eval.common import campaign
     from robustprint.models.features import FeatureBuilder
-    from robustprint.models.registry import physics_prior_on_features
     from robustprint.models.gp import GPRegressor
+    from robustprint.models.registry import physics_prior_on_features
 
     fb = FeatureBuilder()
     arrays = campaign(ISS_NOMINAL, 30, 4, seed=11)
@@ -68,15 +109,75 @@ def export_gp() -> None:
     Xt = fb.transform(test.composition, test.params, test.moisture)
     pred = gp.predict(Xt)
     k = gp.gp_.kernel_
-    (OUT / "gp.json").write_text(json.dumps({
-        "composition": arrays.composition[ok].tolist(), "params": arrays.params[ok].tolist(),
-        "moisture": arrays.moisture[ok].tolist(), "log_strength": y.tolist(),
-        "features": Xs.tolist(), "prior": physics_prior_on_features(Xs, fb).tolist(),
-        "test_features": Xt.tolist(), "test_prior": physics_prior_on_features(Xt, fb).tolist(),
-        "amp": float(k.k1.k1.constant_value), "length_scales": k.k1.k2.length_scale.tolist(),
-        "noise": float(k.k2.noise_level), "lml": float(gp.gp_.log_marginal_likelihood_value_),
-        "pred_mean": pred.mean.tolist(), "pred_var_epistemic": pred.var_epistemic.tolist(),
-        "pred_var_aleatoric": pred.var_aleatoric.tolist()}))
+    (OUT / "gp.json").write_text(
+        json.dumps(
+            {
+                "composition": arrays.composition[ok].tolist(),
+                "params": arrays.params[ok].tolist(),
+                "moisture": arrays.moisture[ok].tolist(),
+                "log_strength": y.tolist(),
+                "features": Xs.tolist(),
+                "prior": physics_prior_on_features(Xs, fb).tolist(),
+                "test_features": Xt.tolist(),
+                "test_prior": physics_prior_on_features(Xt, fb).tolist(),
+                "amp": float(k.k1.k1.constant_value),
+                "length_scales": k.k1.k2.length_scale.tolist(),
+                "noise": float(k.k2.noise_level),
+                "lml": float(gp.gp_.log_marginal_likelihood_value_),
+                "pred_mean": pred.mean.tolist(),
+                "pred_var_epistemic": pred.var_epistemic.tolist(),
+                "pred_var_aleatoric": pred.var_aleatoric.tolist(),
+            }
+        )
+    )
+
+
+def export_gbm() -> None:
+    """Export the boosted-tree success classifier: raw booster scores, isotonic fit, calibrated probabilities."""
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    from sklearn.isotonic import IsotonicRegression
+
+    from robustprint.data.loaders import to_arrays
+    from robustprint.data.synthetic import generate_dataset
+    from robustprint.eval.common import campaign
+    from robustprint.models.classifier import SuccessClassifier
+    from robustprint.models.features import FeatureBuilder
+    from robustprint.physics.simulator import true_outcomes
+
+    fb = FeatureBuilder()
+    arrays = campaign(ISS_NOMINAL, 40, 4, seed=31)
+    X = fb.transform(arrays.composition, arrays.params, arrays.moisture)
+    frame, batches = generate_dataset(ISS_NOMINAL, 150, 4, np.random.default_rng(32))
+    test = to_arrays(frame)
+    Xt = fb.transform(test.composition, test.params, test.moisture)
+    bi = np.repeat(np.arange(150), 4)
+    p_true = true_outcomes(
+        batches.true_composition[bi], test.params, batches.moisture_pct[bi], batches.batch_effect[bi]
+    )["p_success"]
+    raw = HistGradientBoostingClassifier(max_iter=150, learning_rate=0.05, max_leaf_nodes=15, random_state=0)
+    raw.fit(X, arrays.success.astype(int))
+    rng = np.random.default_rng(5)
+    iso_x = rng.normal(size=60).round(2)
+    iso_y = (rng.random(60) < 1 / (1 + np.exp(-2 * iso_x))).astype(float)
+    iso = IsotonicRegression(out_of_bounds="clip").fit(iso_x, iso_y)
+    iso_q = np.linspace(-3, 3, 41)
+    clf = SuccessClassifier("gbm_isotonic", random_state=0).fit(X, arrays.success)
+    (OUT / "gbm.json").write_text(
+        json.dumps(
+            {
+                "features": X.tolist(),
+                "success": arrays.success.tolist(),
+                "test_features": Xt.tolist(),
+                "test_p_true": p_true.tolist(),
+                "raw_decision": raw.decision_function(Xt).tolist(),
+                "proba": clf.predict_proba(Xt).tolist(),
+                "iso_x": iso_x.tolist(),
+                "iso_y": iso_y.tolist(),
+                "iso_query": iso_q.tolist(),
+                "iso_pred": iso.predict(iso_q).tolist(),
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

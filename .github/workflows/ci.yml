@@ -27,3 +27,28 @@ jobs:
         run: mypy
       - name: Tests with coverage
         run: pytest --cov=robustprint --cov-report=term --cov-fail-under=85
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Type check
+        run: npm run typecheck
+      - name: Unit and parity tests (TypeScript port vs Python golden files)
+        run: npm test
+      - name: Build (standalone and Artifact variants)
+        run: npm run build && npm run build:artifact
+      - name: End-to-end smoke test in Chromium
+        run: |
+          npm install --no-save playwright@1.48.2
+          npx playwright install --with-deps chromium
+          node tests/e2e.mjs dist/index.html
