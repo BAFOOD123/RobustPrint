@@ -350,3 +350,32 @@ def realise(
         "modulus_GPa": np.where(success, modulus, nan),
         "elongation_pct": np.where(success, elongation, nan),
     }
+
+
+def print_job(
+    composition: FloatArray,
+    params: FloatArray,
+    moisture_pct: FloatArray,
+    batch_effect: FloatArray,
+    rng: np.random.Generator,
+    n_replicates: int,
+    cfg: SimulatorConfig = DEFAULT_CONFIG,
+) -> dict[str, FloatArray]:
+    """Simulate print jobs of ``n_replicates`` specimens each.
+
+    A job succeeds or fails as a whole (one Bernoulli draw per job). The specimens of a
+    successful job differ only by measurement noise. Arrays of specimen properties have
+    shape (n_replicates, n) and are NaN for failed jobs.
+    """
+    truth = true_outcomes(composition, params, moisture_pct, batch_effect, cfg)
+    n = truth["strength_MPa"].shape[0]
+    success = rng.random(n) < truth["p_success"]
+    cv = truth["noise_cv"]
+    z = rng.standard_normal((3, n_replicates, n))
+    mask = np.where(success, 1.0, np.nan)
+    return {
+        "success": success,
+        "strength_MPa": truth["strength_MPa"] * np.exp(cv * z[0] - 0.5 * cv**2) * mask,
+        "modulus_GPa": truth["modulus_GPa"] * np.exp(0.6 * cv * z[1]) * mask,
+        "elongation_pct": truth["elongation_pct"] * np.exp(1.5 * cv * z[2]) * mask,
+    }

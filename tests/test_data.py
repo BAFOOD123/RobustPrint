@@ -153,3 +153,28 @@ def test_load_experiments_roundtrip_and_error(small_dataset: pd.DataFrame, tmp_p
     _broken(small_dataset).to_csv(bad, index=False)
     with pytest.raises(ValueError, match="failed validation"):
         load_experiments(str(bad))
+
+
+def test_job_means_are_unbiased_measurements_of_the_truth() -> None:
+    """Regression test: replicates of a successful job must all be measured specimens.
+
+    v1.0.0 drew success per replicate and averaged failed replicates as 0 MPa, which biased
+    almost half of the successful job means (fixed in v1.1.0).
+    """
+    from robustprint import space
+    from robustprint.physics.simulator import true_outcomes
+
+    frame, batches = generate_dataset(ISS_NOMINAL, 120, 4, np.random.default_rng(5))
+    ok = frame[frame["print_success"]]
+    idx = [batches.batch_id.index(b) for b in ok["batch_id"]]
+    truth = true_outcomes(
+        batches.true_composition[idx],
+        ok[space.PARAM_NAMES].to_numpy(),
+        batches.moisture_pct[idx],
+        batches.batch_effect[idx],
+    )
+    log_ratio = np.log(ok["tensile_strength_MPa"].to_numpy() / truth["strength_MPa"])
+    expected_sd = np.sqrt(np.mean(truth["noise_cv"] ** 2) / 3)
+    assert abs(log_ratio.mean()) < 0.03
+    assert log_ratio.std() < 1.5 * expected_sd
+    assert ok["tensile_strength_sd_MPa"].notna().all()

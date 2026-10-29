@@ -20,7 +20,7 @@ from robustprint.physics.simulator import (
     Batches,
     Feedstock,
     SimulatorConfig,
-    realise,
+    print_job,
     sample_batches,
 )
 
@@ -65,18 +65,12 @@ def experiments_frame(
     comp = batches.true_composition[batch_index]
     moisture = batches.moisture_pct[batch_index]
     effect = batches.batch_effect[batch_index]
-    reps = [realise(comp, params, moisture, effect, rng, cfg) for _ in range(n_replicates)]
-    job_success = reps[0]["success"]
-    strengths = np.stack([r["strength_MPa"] for r in reps])
-    if n_replicates == 1:
-        strength_sd = np.full(n, np.nan)
-    else:
-        spread = np.std(np.nan_to_num(strengths, nan=0.0), axis=0, ddof=1)
-        strength_sd = np.where(job_success, spread, np.nan)
+    job = print_job(comp, params, moisture, effect, rng, n_replicates, cfg)
+    job_success = job["success"]
+    strength_sd = np.full(n, np.nan) if n_replicates == 1 else np.std(job["strength_MPa"], axis=0, ddof=1)
 
     def _mean(key: str) -> FloatArray:
-        stacked = np.stack([np.nan_to_num(r[key], nan=0.0) for r in reps])
-        return np.where(job_success, stacked.mean(axis=0), np.nan)
+        return np.asarray(job[key].mean(axis=0), dtype=float)
 
     data: dict[str, object] = {
         "experiment_id": [f"{id_prefix}{i:05d}" for i in range(n)],

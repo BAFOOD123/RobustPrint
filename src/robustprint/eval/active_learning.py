@@ -15,7 +15,7 @@ from robustprint.eval.common import campaign, parallel_map, seed_for
 from robustprint.optimize.objectives import ObjectiveSettings, RobustProblem
 from robustprint.optimize.robust import recommend
 from robustprint.physics.composition import FloatArray
-from robustprint.physics.simulator import DEFAULT_CONFIG, ISS_NOMINAL, Batches, realise
+from robustprint.physics.simulator import DEFAULT_CONFIG, ISS_NOMINAL, Batches, print_job
 from robustprint.pipeline import MIN_STRENGTH_ROWS, train_predictor
 from robustprint.uncertainty.propagation import OraclePredictor
 
@@ -59,11 +59,10 @@ def _new_jobs(
     reported /= reported.sum(1, keepdims=True)
     effect = DEFAULT_CONFIG.batch_effect_sd * rng.standard_normal(n)
     batches = Batches([f"AL{start + i:04d}" for i in range(n)], true, reported, moisture, effect)
-    reps = [realise(batches.true_composition, params, moisture, effect, rng) for _ in range(n_replicates)]
-    success = reps[0]["success"]
-    strengths = np.stack([np.nan_to_num(r["strength_MPa"]) for r in reps])
-    mean = np.where(success, strengths.mean(0), np.nan)
-    sd = np.where(success, strengths.std(0, ddof=1), np.nan) if n_replicates > 1 else np.full(n, np.nan)
+    job = print_job(batches.true_composition, params, moisture, effect, rng, n_replicates)
+    success = job["success"]
+    mean = job["strength_MPa"].mean(0)
+    sd = job["strength_MPa"].std(0, ddof=1) if n_replicates > 1 else np.full(n, np.nan)
     nan = np.full(n, np.nan)
     return ExperimentArrays(
         reported, params, moisture, mean, sd, nan, nan, success, np.full(n, n_replicates), np.array(batches.batch_id)
