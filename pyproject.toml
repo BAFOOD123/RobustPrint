@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "robustprint"
-version = "1.0.0"
+version = "1.1.0"
 description = "Uncertainty-aware print-parameter optimisation for recycled, variable-composition FDM feedstock."
 readme = "README.md"
 requires-python = ">=3.11"

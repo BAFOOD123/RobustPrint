@@ -1,9 +1,21 @@
-# RobustPrint — final report (v1.0.0)
+# RobustPrint — final report (v1.1.0)
 
 All results below are **synthetic** (RobustPrint simulator) unless marked "public data".
 Every number comes from `results/full/`, produced by `robustprint reproduce --full`
-(16 min 10 s on a 4-core CPU; commit `27e1a57`, see `results/full/manifest.json`).
+(25 min 2 s on the 4-core CPU container used for v1.1.0; see `results/full/manifest.json`).
+That container was about 1.6× slower than the one used for v1.0.0 (16 min 10 s): on it the
+v1.0.0 and v1.1.0 code ran the fast configuration's E1–E3 in the same time (61 s vs 60 s),
+so the fix did not slow the code down, but the 20-minute target is only met on a machine
+like the first. A second clean run reproduced every result file byte-for-byte apart from
+wall-clock timings.
 `python scripts/readme_numbers.py` prints them all at full precision.
+
+**v1.1.0 replaces every v1.0.0 number.** The v1.0.0 data generator drew print success
+separately for each replicate specimen and averaged failed specimens into the job's
+strength as 0 MPa, biasing about 46 % of successful job means downward. The bug was found
+while porting the generator to the browser. It was fixed with a regression test, and all
+experiments were re-run with the pre-registered protocol unchanged (METHODS §8.7). Several
+conclusions reversed; §3 lists which.
 
 ## 1. What was built
 
@@ -32,66 +44,84 @@ Every number comes from `results/full/`, produced by `robustprint reproduce --fu
   experiment against a ground-truth oracle, 15 ablations and stress tests, model
   comparison and learning curves, active-learning simulation, and an optional public-data
   check.
+- **The RobustPrint Virtual Lab** (`web/`, new in v1.1.0): a single-file browser app with
+  a TypeScript re-implementation of the simulator, the hybrid GP, the boosted-tree success
+  classifier, the objectives, CMA-ES and the acquisition strategies, tested against golden
+  files from the Python code (ADR-020). Six steps: bench, campaign (or CSV import),
+  model, optimise & deploy, next experiments, and the study results.
 - **Interfaces and engineering:** a typer CLI (`validate`, `simulate`, `train`, `predict`,
   `optimize`, `recommend-experiments`, `starter-design`, `reproduce`, `figures`,
-  `public-data`) and a Streamlit dashboard. 100 tests (unit, property-based with Hypothesis,
-  integration, dashboard) with 97 % line coverage of `src/` (excluding plotting and the
-  CLI module, which the integration tests exercise). ruff, mypy, GitHub Actions CI,
-  pre-commit, Makefile and a pinned lock file.
+  `public-data`), a Streamlit dashboard and the Virtual Lab. 101 Python tests (unit,
+  property-based with Hypothesis, integration, dashboard; 98 % line coverage of
+  `src/` excluding plotting and the CLI module), 20 TypeScript parity and unit tests and a
+  Playwright end-to-end test. ruff, mypy, strict TypeScript, GitHub Actions CI, a GitHub
+  Pages workflow, pre-commit, Makefile and pinned lock files.
 
 ## 2. Headline results
 
 | Claim | Number | File |
 |---|---|---|
-| Learned-model robust objectives vs nominal: failure rate | 11.9 % (nominal) vs 9.9 % (CVaR); no Holm-significant difference (all adjusted p = 1.0) | `e1_optimisation/summary.csv`, `tests.csv` |
-| Learned-model CVaR vs nominal: 5th-percentile strength | 3.67 vs 4.02 MPa (difference −0.34 [−0.61, −0.10]; Holm p = 1.0) | `e1_optimisation/tests.csv` |
-| Learned-model expected utility | 6.15–6.66 MPa across objectives (nominal 6.53) | `e1_optimisation/summary.csv` |
+| H1: composition-aware objectives fail less (learned model) | 13.1–14.2 % vs 19.5 % for nominal; −5.3 to −6.4 points, all Holm p ≤ 0.014 | `e1_optimisation/summary.csv`, `tests.csv` |
+| H2 contradicted: weakest good parts | 5 % quantile 4.18–4.26 vs 4.71 MPa for nominal (expected, quantile, CVaR; Holm p ≤ 0.004) | `e1_optimisation/tests.csv` |
+| H3: expected utility | chance-constrained +0.67 MPa [0.37, 0.99] (Holm p = 0.007); others no difference | `e1_optimisation/tests.csv` |
 | Oracle (true function): composition-aware vs nominal | failure 9.6 % vs 17.6 %; expected utility 8.52 vs 8.05 MPa (exploratory) | `e1_optimisation/tests_oracle_exploratory.csv` |
-| Regret of learned-model recommendations | 1.87–2.37 MPa of expected utility | `e1_optimisation/summary.csv` |
-| Why: noise vs truth at recommended settings | model noise 0.36 vs true 0.015 (log variance); feedstock share 19–22 % vs 84 % | `e4_propagation/decomposition.csv` |
-| Only significant ablation | 2× composition spread: expected objective failure 16.7 % → 13.1 % (Holm p = 0.041) | `e1b_ablations/tests.csv` |
-| Best probabilistic model (120 batches) | hybrid GP: CRPS 0.225, NLL 0.53; coverage 0.86 (0.93 with conformal) | `e2_models/metrics.csv`, `conformal.csv` |
-| Physics prior and data efficiency | CRPS 0.377 vs 0.488 (hybrid vs plain GP) at 15 batches; equal at 120 | `e2_models/metrics.csv` |
-| Active learning | no strategy distinguishable from random after 52 jobs | `e3_active_learning/per_round.csv` |
-| Unscented transform | 2.5 % SD error on the hybrid GP, 26 % on the ground truth | `e4_propagation/errors.csv` |
+| Regret of learned-model recommendations | 1.14 (chance) to 2.06 (CVaR) MPa of expected utility | `e1_optimisation/summary.csv` |
+| Where the uncertainty is | composition share of predictive variance: hybrid GP 65–69 %, ground truth 82–84 %, deep ensemble 29–32 % | `e4_propagation/decomposition.csv` |
+| Propagation is what buys the failure reduction | without it, expected and CVaR fail 7.6 and 6.6 points more (descriptive, paired vs main run) | `e1b_ablations/vs_main_paired.csv` |
+| Best probabilistic models (120 batches) | GP and hybrid GP: CRPS 0.092, NLL −0.39; coverage 0.85–0.86 (hybrid with conformal: 0.88) | `e2_models/metrics.csv`, `conformal.csv` |
+| Physics prior | no gain at 120 batches (CRPS 0.0922 vs 0.0920), worse at 15 (0.336 vs 0.264) | `e2_models/metrics.csv` |
+| Active learning | no strategy better than random after 52 jobs; cost-aware worse by 1.38 MPa [0.60, 2.19] | `e3_active_learning/per_round.csv` |
+| Unscented transform | 6 % SD error on the hybrid GP, 26 % on the ground truth | `e4_propagation/errors.csv` |
 | Sensitivity | nozzle temperature total index 0.58 (strength), 0.74 (success); composition 0.25 / 0.29 | `e5_sensitivity/global.csv` |
 | Public data (Kaggle PLA/ABS) | CRPS 0.206–0.212 for all models; simulator directions agree for 3 of 6 settings | `e7_public_benchmark.csv`, `e7_public_trends.csv` |
 
-## 3. What worked and what did not
+## 3. What changed from v1.0.0, what worked and what did not
+
+**Reversed or changed by the correction**
+
+- H1 (fewer failures) is now supported; in v1.0.0 no difference survived correction.
+- The chance-constrained objective now raises expected utility significantly.
+- The v1.0.0 diagnosis that the model "mistook its lack of knowledge for noise" (model
+  noise 0.36 vs 0.015 in log variance) was mostly an artefact of the bug: the corrected
+  model attributes 65–69 % of its variance to composition.
+- The physics prior no longer helps with little data (v1.0.0: CRPS 0.377 vs 0.488 at 15
+  batches; now 0.336 vs 0.264, the other way round).
+- Cost-aware active learning is now significantly worse than random (v1.0.0: no difference).
 
 **Worked**
 
 - The pipeline end to end: real-data schema → validated arrays → models → propagation →
-  robust recommendation → next-experiment table, all reproducible bit-for-bit (a clean
-  re-run reproduced every result file byte-for-byte, apart from wall-clock timings).
-- The physics-residual GP was the most accurate probabilistic model and clearly more
-  data-efficient than the plain GP at small sample sizes.
-- Early stopping turned overconfident NLL-trained networks into well-covering ones
-  (deep ensemble 90 % coverage 0.92). Conformal wrapping restored nominal coverage in
-  distribution.
-- The oracle experiment showed what composition-aware optimisation *can* gain in this
-  simulator: nearly half the print failures.
-- The variance decomposition diagnosed *why* the learned-model pipeline did not realise that gain.
+  robust recommendation → next-experiment table, reproducible bit-for-bit given the seed.
+- Composition-aware objectives cut failures on unseen batches by 27–33 % with the learned
+  model and by 45 % with the perfect model, and the ablation without propagation lost that gain.
+- The chance-constrained objective improved failures and expected utility together.
+- Early stopping turned overconfident NLL-trained networks into well-covering ones (deep
+  ensemble 90 % coverage 0.94). Conformal wrapping restored nominal coverage at 30–60
+  training batches.
+- Porting to the browser found the generator bug: an independent re-implementation is a
+  strong test.
 
 **Did not work**
 
-- Robust objectives with a learned model: no confirmed benefit over nominal, and the
-  quantile/CVaR objectives made the weakest parts slightly weaker.
-- Model-based active learning: no detectable improvement over random or Sobol within 52 jobs.
-- The unscented transform on the cliff-like ground truth; the heteroscedastic GP (worse
-  NLL than the plain GP); deep ensembles as optimiser models (much worse recommendations
-  despite good coverage); everything under out-of-distribution feedstock (45–48 % failures).
-- The first simulator version had no composition × process interaction, so robust
-  optimisation could not matter. The interaction we then added is a modelling choice
-  (ADR-012).
+- Quantile and CVaR objectives did not protect the weakest parts: lower-tail strength went
+  down, not up.
+- Model-based active learning: no improvement over random or Sobol within 52 jobs; regret
+  did not fall; cost-aware selection was worse.
+- The physics prior; the heteroscedastic GP (worse NLL than the plain GP); the unscented
+  transform on the cliff-like ground truth; deep ensembles as optimiser models (worse
+  recommendations despite the best coverage); conformal intervals at 120 batches and under
+  shift; everything under out-of-distribution feedstock (54–66 % failures).
+- The v1.0.0 test suite: it checked shapes, ranges and determinism but not that the
+  generator was unbiased.
 
 ## 4. Known limitations
 
 The simulator is not validated against any real recycled feedstock, and its coefficients
 are partly assumptions. The benefit of robust optimisation in it depends on an interaction
-we added. Models are weak below about 100 successful prints in 13 dimensions. Conformal
-guarantees fail under feedstock shift. Nothing here is validated for flight or
-safety-critical use. Full list: `docs/LIMITATIONS.md`.
+we added (ADR-012). Models are weak below about 100 successful prints in 13 dimensions.
+Conformal guarantees fail under feedstock shift. The browser lab is a second
+implementation, not the study. Nothing here is validated for flight or safety-critical use.
+Full list: `docs/LIMITATIONS.md`.
 
 ## 5. The three most valuable next steps with real lab data
 
@@ -100,26 +130,24 @@ safety-critical use. Full list: `docs/LIMITATIONS.md`.
    repeats directly estimate batch-to-batch variance, the quantity the whole method
    depends on. Then check whether settings × composition interactions exist at all:
    does the best nozzle temperature or speed differ between batches?
-2. **Reduce model error before relying on robust objectives.** The synthetic results say
-   the bottleneck is model error, not the robust formulation. Spend early experiments on
-   space-filling coverage of the 3–4 settings that matter most (nozzle temperature first),
-   and narrow the search box to the printable region, to cut the effective dimension.
-3. **Validate predictions prospectively.** Print the recommended CVaR setting and the
-   nominal setting on at least two *new* batches, and compare with the predicted 90 %
-   intervals and success probabilities. That is the real version of experiment E1, and the
-   only test that counts.
+2. **Test the failure result first.** The clearest synthetic effect is on failed prints,
+   not on strength. Print the nominal and the chance-constrained recommendation on the same
+   new batches and count failures; it needs far fewer specimens than a strength comparison.
+3. **Validate predictions prospectively.** Compare measured strengths and failures on new
+   batches with the predicted 90 % intervals and success probabilities. That is the real
+   version of experiment E1, and the only test that counts.
 
 ## 6. Talking points (each grounded in a result here)
 
-- "I pre-registered my evaluation and reported a negative result: with a model trained on
-  about 100 successful prints, robust optimisation did not beat the naive approach, even
-  though it nearly halves failures when the model is perfect." (E1, oracle comparison.)
-- "I found out why: the model mistook its own lack of knowledge for random noise, so it
-  could not see the composition uncertainty it was supposed to be robust to." (E4.)
-- "Adding simple physics as a prior made the model much better with little data, which is
-  the regime a student lab is in." (E2 learning curves.)
+- "I pre-registered my evaluation. Planning for the feedstock distribution cut failed
+  prints on unseen batches by roughly 30 %, but the tail-risk objectives did not make the
+  weakest parts stronger; that hypothesis was contradicted." (E1.)
+- "An ablation shows where the gain comes from: switch off composition propagation and it
+  disappears." (E1b.)
+- "I found a bug in my own data generator by re-implementing it for the browser. I fixed
+  it, added a regression test, re-ran everything with the same protocol and reported which
+  conclusions reversed." (CHANGELOG, METHODS §8.7.)
 - "Good uncertainty calibration in cross-validation did not guarantee good decisions: the
   best-covering model gave the worst recommendations." (E1b deep ensemble.)
-- "Every synthetic result is traceable to a file and a command, the whole study reproduces
-  bit-for-bit in about 16 minutes on a laptop-class CPU, and the tool is ready for real
-  data through a validated CSV schema." (`results/full/`, `manifest.json`, `data/schema.md`.)
+- "Every synthetic result is traceable to a file and a command, and the whole method also
+  runs in a browser tab for anyone to try." (`results/full/`, `web/`.)

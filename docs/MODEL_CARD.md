@@ -13,7 +13,7 @@
 - **Outputs:** Gaussian on log strength, split into epistemic and aleatoric variance;
   P(success). Through Monte Carlo over a feedstock distribution, also the predictive
   distribution for a part from the *next* batch and its variance decomposition.
-- **Version:** 1.0.0. Licence: MIT. Code: this repository.
+- **Version:** 1.1.0 (the browser Virtual Lab in `web/` contains a TypeScript re-implementation of `hybrid_gp` and `gbm_isotonic`; ADR-020). Licence: MIT. Code: this repository.
 
 ## Intended use
 
@@ -52,12 +52,17 @@ them are synthetic.
 
 Known behaviour (synthetic):
 
-- The GP family under-covers on new batches without conformal calibration. The early-stopped
-  deep ensemble is close to nominal coverage in distribution.
+- The GP family has the best RMSE, NLL and CRPS but under-covers on new batches (85–86 % at
+  a nominal 90 % with 120 training batches); conformal wrapping fixes this at 30–60 batches
+  but not at 120. The early-stopped deep ensemble slightly over-covers (94 %) with worse
+  CRPS. The physics prior of `hybrid_gp` did not improve on the plain GP at any data size.
 - All models degrade under feedstock shift; normalised conformal intervals lose their
   coverage there.
-- The fitted models attribute much more of the predictive variance to noise than the
-  ground truth does, and less to composition (`results/full/e4_propagation/decomposition.csv`).
+- At the recommended settings `hybrid_gp` attributes 65–69 % of the predictive variance to
+  composition (ground truth: 82–84 %); the deep ensemble only 29–32 %, and most of the rest
+  to noise (`results/full/e4_propagation/decomposition.csv`).
+- Version 1.0.0 was trained and evaluated on data from a biased generator (failed
+  replicates averaged in as 0 MPa); its numbers are superseded by v1.1.0.
 
 ## Ethical and practical considerations
 

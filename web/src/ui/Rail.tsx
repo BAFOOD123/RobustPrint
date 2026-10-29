@@ -1,5 +1,6 @@
 /** The job ticket: feedstock distribution and print settings, used by every view. */
 
+import { useEffect, useState } from "react";
 import { closure, dirichletStd } from "../engine/composition";
 import { COMPONENTS, FEEDSTOCKS } from "../engine/materials";
 import { PARAMETERS } from "../engine/space";
@@ -8,8 +9,19 @@ import { CompositionBar, Slider } from "./controls";
 
 const PRESET_LABELS: Record<string, string> = { iss_nominal: "ISS mixed waste (nominal)", iss_shifted: "Shifted stream (more fibre and residue)" };
 
+/** Below this width the ticket stacks above the workspace and starts collapsed. */
+const NARROW = "(max-width: 900px)";
+
 export function Rail() {
   const { state, dispatch } = useApp();
+  const [open, setOpen] = useState(() => !window.matchMedia?.(NARROW).matches);
+  useEffect(() => {
+    // The summary that toggles the ticket is hidden on wide screens, so widening must reopen it.
+    const mq = window.matchMedia?.(NARROW);
+    const onChange = () => !mq.matches && setOpen(true);
+    mq?.addEventListener("change", onChange);
+    return () => mq?.removeEventListener("change", onChange);
+  }, []);
   const fs = state.feedstock;
   const mean = closure(fs.mean);
   const sd = dirichletStd(mean, fs.concentration);
@@ -24,6 +36,13 @@ export function Rail() {
   const preset = Object.keys(FEEDSTOCKS).find((k) => FEEDSTOCKS[k].mean.every((v, i) => Math.abs(v - mean[i]) < 1e-6) && FEEDSTOCKS[k].concentration === fs.concentration) ?? "custom";
   return (
     <aside className="rail" aria-label="Feedstock and print settings">
+      <details open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
+        <summary className="rail-summary">
+          <span>Job ticket</span>
+          <span className="eyebrow">
+            {PRESET_LABELS[preset] ?? "custom feedstock"} · {state.settings[0].toFixed(0)} °C · {state.settings[2].toFixed(0)} mm/s
+          </span>
+        </summary>
       <section className="rail-section">
         <div className="rail-head">
           <h3>Feedstock</h3>
@@ -109,6 +128,7 @@ export function Rail() {
           />
         ))}
       </section>
+      </details>
     </aside>
   );
 }

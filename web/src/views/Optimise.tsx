@@ -20,7 +20,7 @@ function shares(r: Recommendation) {
   return { input: p.varInput / tot, epistemic: p.varEpistemic / tot, aleatoric: p.varAleatoric / tot };
 }
 
-function RecommendationTable({ recs, onApply }: { recs: Recommendation[]; onApply: (r: Recommendation) => void }) {
+function RecommendationTable({ recs, onApply, scored }: { recs: Recommendation[]; onApply: (r: Recommendation) => void; scored: boolean }) {
   return (
     <div className="table-wrap">
       <table>
@@ -34,9 +34,18 @@ function RecommendationTable({ recs, onApply }: { recs: Recommendation[]; onAppl
               </th>
             ))}
             <th title="Predicted P(success) over the feedstock">Pred. print</th>
-            <th>Failed (real)</th>
-            <th>Weakest 5 % (real)</th>
-            <th>Expected utility (real)</th>
+            {scored ? (
+              <>
+                <th>Failed (simulated)</th>
+                <th>Weakest 5 % (simulated)</th>
+                <th>Expected utility (simulated)</th>
+              </>
+            ) : (
+              <>
+                <th>Pred. weakest 5 %</th>
+                <th>Pred. CVaR 10 %</th>
+              </>
+            )}
             <th>Uncertainty from feedstock</th>
             <th />
           </tr>
@@ -55,11 +64,20 @@ function RecommendationTable({ recs, onApply }: { recs: Recommendation[]; onAppl
                   <td key={k}>{PARAMETERS[k].step < 1 ? v.toFixed(2) : v.toFixed(0)}</td>
                 ))}
                 <td>{pct(r.predicted.pSuccess, 0)}</td>
-                <td>{pct(r.deployed.failureRate, 1)}</td>
-                <td>{mpa(r.deployed.q05Strength)}</td>
-                <td>
-                  <b>{mpa(r.deployed.expectedUtility)}</b>
-                </td>
+                {scored ? (
+                  <>
+                    <td>{pct(r.deployed.failureRate, 1)}</td>
+                    <td>{mpa(r.deployed.q05Strength)}</td>
+                    <td>
+                      <b>{mpa(r.deployed.expectedUtility)}</b>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{mpa(r.predicted.quantile)}</td>
+                    <td>{mpa(r.predicted.cvar)}</td>
+                  </>
+                )}
                 <td>{pct(s.input, 0)}</td>
                 <td>
                   <button type="button" onClick={() => onApply(r)} title="Copy these settings to the ticket and look at them on the Bench">
@@ -78,17 +96,21 @@ function RecommendationTable({ recs, onApply }: { recs: Recommendation[]; onAppl
 export function Optimise() {
   const { state, dispatch } = useApp();
   const [objectives, setObjectives] = useState<Objective[]>(["nominal", "expected", "cvar"]);
-  const [which, setWhich] = useState<"model" | "oracle" | "both">(state.train ? "both" : "oracle");
+  const imported = state.dataSource === "uploaded";
+  const [which, setWhich] = useState<"model" | "oracle" | "both">(imported ? "model" : state.train ? "both" : "oracle");
   const [budget, setBudget] = useState(1500);
   const [deployBatches, setDeployBatches] = useState(1000);
   const [shifted, setShifted] = useState(false);
   const [busy, setBusy] = useState<{ fraction: number; label: string } | null>(null);
   const [error, setError] = useState("");
   const [histFor, setHistFor] = useState<"model" | "oracle">("model");
-  const needsModel = which !== "oracle";
+  // With imported data the simulator's truth says nothing about the real material: decide with the
+  // learned model only, and report its predictions instead of simulated deployment.
+  const choice = imported ? "model" : which;
+  const needsModel = choice !== "oracle";
   const go = async () => {
     setError("");
-    const kinds: ("model" | "oracle")[] = which === "both" ? ["model", "oracle"] : [which];
+    const kinds: ("model" | "oracle")[] = choice === "both" ? ["model", "oracle"] : [choice];
     try {
       const results: Recommendation[] = [];
       let seconds = 0;
@@ -141,7 +163,7 @@ export function Optimise() {
         <div className="actions">
           <label className="inline-field" htmlFor="which">
             Decide with
-            <select id="which" value={which} onChange={(e) => setWhich(e.target.value as typeof which)}>
+            <select id="which" value={choice} disabled={imported} onChange={(e) => setWhich(e.target.value as typeof which)}>
               <option value="model">the learned model</option>
               <option value="oracle">a perfect model (the hidden truth)</option>
               <option value="both">both, side by side</option>
@@ -172,7 +194,8 @@ export function Optimise() {
             Optimise and deploy
           </button>
         </div>
-        <p className="small muted">All objectives require a predicted print success of at least 90 %. Strengths are for parts that print; expected utility counts a failed print as 0 MPa.</p>
+        <p className="small muted">All objectives require a predicted print success of at least 90 %. Strengths are for parts that print; expected utility counts a failed print as 0 MPa. &ldquo;Simulated&rdquo; columns come from printing each setting once on every fresh batch in the simulator.</p>
+        {imported && <div className="callout warn">Imported data: the simulator knows nothing about your material, so recommendations are shown with the learned model's predictions only. Print them to find out how they really do.</div>}
         {needsModel && !state.train && <div className="callout warn">The learned model is not trained yet. Train it on the Model step, or decide with the perfect model.</div>}
         {busy && <Progress fraction={busy.fraction} label={busy.label} />}
         {error && <div className="callout bad">{error}</div>}
@@ -183,53 +206,58 @@ export function Optimise() {
         </Empty>
       ) : (
         <>
-          <div className="grid-2">
-            <section className="panel">
-              <div className="panel-head">
-                <h3>Failed prints on fresh batches</h3>
-              </div>
-              <BarChart ariaLabel="Failure rate by objective" data={bar((r) => r.deployed.failureRate, (v) => pct(v, 1))} yLabel="failure rate" yFormat={(v) => `${Math.round(v * 100)}%`} />
-            </section>
-            <section className="panel">
-              <div className="panel-head">
-                <h3>Expected utility</h3>
-                <p>mean strength, failed part = 0 MPa</p>
-              </div>
-              <BarChart ariaLabel="Expected utility by objective" data={bar((r) => r.deployed.expectedUtility, (v) => fmt(v, 3))} yLabel="MPa" />
-            </section>
-          </div>
+          {!imported && (
+            <div className="grid-2">
+              <section className="panel">
+                <div className="panel-head">
+                  <h3>Failed prints on fresh batches</h3>
+                </div>
+                <BarChart ariaLabel="Failure rate by objective" data={bar((r) => r.deployed.failureRate, (v) => pct(v, 1))} yLabel="failure rate" yFormat={(v) => `${Math.round(v * 100)}%`} />
+              </section>
+              <section className="panel">
+                <div className="panel-head">
+                  <h3>Expected utility</h3>
+                  <p>mean strength, failed part = 0 MPa</p>
+                </div>
+                <BarChart ariaLabel="Expected utility by objective" data={bar((r) => r.deployed.expectedUtility, (v) => fmt(v, 3))} yLabel="MPa" />
+              </section>
+            </div>
+          )}
           <section className="panel">
             <div className="panel-head">
-              <h3>Recommended settings and what really happened</h3>
+              <h3>{imported ? "Recommended settings" : "Recommended settings and what happened in the simulator"}</h3>
               <p>{state.optimise?.seconds.toFixed(1)} s of compute</p>
             </div>
             <RecommendationTable
               recs={recs}
+              scored={!imported}
               onApply={(r) => {
                 dispatch({ type: "settings", settings: r.params.map((v, k) => Number(v.toFixed(PARAMETERS[k].step < 1 ? 2 : 0))) });
                 window.location.hash = "bench";
               }}
             />
           </section>
-          <section className="panel">
-            <div className="panel-head">
-              <h3>Strength of the parts that printed</h3>
-              {predictors.length > 1 && (
-                <label className="inline-field" htmlFor="hist-for">
-                  Settings from
-                  <select id="hist-for" value={histPredictor} onChange={(e) => setHistFor(e.target.value as "model" | "oracle")}>
-                    <option value="model">the learned model</option>
-                    <option value="oracle">the perfect model</option>
-                  </select>
-                </label>
-              )}
-            </div>
-            <Histogram
-              ariaLabel="Realised strength distributions"
-              xLabel="realised tensile strength (MPa)"
-              dists={recs.filter((r) => r.predictor === histPredictor).map((r) => ({ name: SHORT[r.objective], color: OBJ_COLOR[r.objective], values: r.deployed.strengths }))}
-            />
-          </section>
+          {!imported && (
+            <section className="panel">
+              <div className="panel-head">
+                <h3>Strength of the parts that printed</h3>
+                {predictors.length > 1 && (
+                  <label className="inline-field" htmlFor="hist-for">
+                    Settings from
+                    <select id="hist-for" value={histPredictor} onChange={(e) => setHistFor(e.target.value as "model" | "oracle")}>
+                      <option value="model">the learned model</option>
+                      <option value="oracle">the perfect model</option>
+                    </select>
+                  </label>
+                )}
+              </div>
+              <Histogram
+                ariaLabel="Realised strength distributions"
+                xLabel="realised tensile strength (MPa)"
+                dists={recs.filter((r) => r.predictor === histPredictor).map((r) => ({ name: SHORT[r.objective], color: OBJ_COLOR[r.objective], values: r.deployed.strengths }))}
+              />
+            </section>
+          )}
         </>
       )}
     </>

@@ -110,9 +110,16 @@ target composition as you can, but record the composition you *measured*. Print 
 append the rows to your CSV, then retrain and repeat. `cost_aware_ivr` prefers cheaper
 (faster) prints. `sobol` gives a model-free space-filling choice if you distrust the model.
 
-In the synthetic active-learning experiment, the model-based strategies did **not** beat
-random or Sobol selection in a way we could detect (see README, "What did not work").
-Space-filling designs are a sound default.
+In the synthetic active-learning experiment (20 initial jobs, 8 rounds of 4), the
+model-based strategies did **not** beat random or Sobol selection, and `cost_aware_ivr`
+was clearly *worse* than random: its cheap, fast prints failed more often, so its campaigns
+produced fewer usable strength measurements (see README, "What did not work"). Until a
+campaign has a few dozen successful jobs, space-filling designs are a sound default; do not
+use `cost_aware_ivr` for an early campaign.
+
+To try the whole loop before printing anything, open the browser Virtual Lab (`web/`,
+README §3). It can also import your CSV for validation, model training and recommendations;
+the file stays in your browser.
 
 ## 6. Before you trust a recommendation
 

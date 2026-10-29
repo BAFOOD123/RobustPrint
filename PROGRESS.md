@@ -69,3 +69,22 @@ Timestamped log of work on RobustPrint. Times are UTC (container clock).
 - Fresh clone: make setup OK, make test: 100 passed, coverage 96.75 %; make fast: see below.
 - make fast in the fresh clone: 83 s (E7 skipped: public data not downloaded). setup+test+fast: 2 min 38 s.
 - Tagged v1.0.0.
+
+## 2026-10-29 — v1.1.0: Virtual Lab and a corrected study
+- Goal from the user: a web simulator that uses the project's data as an environment for
+  simulation. Plan: port the engine to TypeScript (Vite + React + strict TS, Web Worker),
+  verify against golden files from Python, then build the UI around the lab loop.
+- **Bug found while porting:** the Python generator drew success per replicate and averaged
+  failed replicates as 0 MPa (≈46 % of good job means biased; log-ratio SD 0.41 vs ~0.08).
+  Fixed with `print_job` + regression test (commit 28a4e0e); full study re-run.
+- Parity: simulator 1e-9 rel. (400 rows), ilr 1e-10, GP predictions 1e-7, LML gradient by
+  finite differences, isotonic exact, raw boosted scores 0.04 log-odds.
+- Browser findings, fixed before release: (1) the poly-2 logistic success model invented a
+  raster-angle effect (P(success) 0.67 vs true 0.95 at 0°), pushing learned recommendations
+  to 90°; replaced by a port of gbm_isotonic (excess error vs true P 0.045 vs 0.077 at 40
+  batches). (2) CMA-ES budgets of 300–900 left raster/speed unconverged; now 800/1500/3000,
+  matching the study. (3) Module workers from data: URLs fail from file://; classic worker.
+  (4) Regret reference aligned with E3 (oracle CVaR optimum on a fixed truth sample, signed).
+- Corrected results reverse several v1.0.0 conclusions (CHANGELOG). The first corrected
+  run's timings were inflated by concurrent browser tests; a clean re-run gives the
+  reported timing and checks byte-identical outputs.

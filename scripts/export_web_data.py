@@ -49,9 +49,9 @@ def main(res: Path) -> None:
             {
                 "method": x.method,
                 "metric": x.metric,
-                "diff": r(x.mean_diff),
-                "lo": r(x.diff_ci_low),
-                "hi": r(x.diff_ci_high),
+                "diff": r(x.mean_diff, 6),
+                "lo": r(x.diff_ci_low, 6),
+                "hi": r(x.diff_ci_high, 6),
                 "pHolm": r(x.p_holm, 5),
             }
             for x in t.itertuples()
@@ -69,7 +69,13 @@ def main(res: Path) -> None:
         if not str(m).startswith("oracle")
     ]
     sig = [
-        {"variant": x.variant, "method": x.method, "metric": x.metric, "diff": r(x.mean_diff), "pHolm": r(x.p_holm, 5)}
+        {
+            "variant": x.variant,
+            "method": x.method,
+            "metric": x.metric,
+            "diff": r(x.mean_diff, 6),
+            "pHolm": r(x.p_holm, 5),
+        }
         for x in abt.itertuples()
         if x.p_holm < 0.05
     ]

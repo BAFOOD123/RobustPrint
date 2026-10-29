@@ -50,6 +50,14 @@ file (see `results/full/manifest.json` for versions, seeds and timings). Protoco
 hypotheses were **pre-registered** in [METHODS §8](docs/METHODS.md#8-evaluation-protocol-pre-registered)
 before the final runs.
 
+> **Correction in v1.1.0.** The v1.0.0 results were produced with a bug in the synthetic
+> data generator: each replicate specimen of a print job had its own success draw, and
+> failed replicates were averaged into the job's strength as 0 MPa. About 46 % of
+> successful job means were biased downward. The bug was found while porting the
+> generator to the browser, fixed with a regression test, and **every result was
+> regenerated** with the pre-registered protocol unchanged. Several v1.0.0 conclusions
+> reversed. See [CHANGELOG](CHANGELOG.md) and [METHODS §8.7](docs/METHODS.md#87-deviations-from-the-protocol-recorded-after-the-runs).
+
 **Setup (E1).** 30 seeds. In each seed a simulated lab prints a training campaign of
 240 jobs (60 feedstock batches × 4 settings × 3 specimens; about 102 jobs print
 successfully). A physics-residual Gaussian process and a calibrated success classifier
@@ -58,80 +66,91 @@ are trained on it. Each objective recommends one setting, which is printed once 
 
 | Objective (learned model) | Failure rate | 5th-pct strength of good parts (MPa) | Expected utility (MPa) |
 |---|---|---|---|
-| Nominal (mean composition) | 11.9 % [10.0, 14.2] | 4.02 [3.71, 4.30] | 6.53 [6.03, 7.01] |
-| Expected over composition | 10.3 % [8.8, 12.1] | 3.89 [3.57, 4.19] | 6.50 [5.99, 6.97] |
-| 5 % quantile | 9.9 % [8.9, 11.2] | 3.70 [3.37, 4.02] | 6.19 [5.65, 6.69] |
-| CVaR (10 %) | 9.9 % [8.7, 11.2] | 3.67 [3.36, 3.98] | 6.15 [5.65, 6.65] |
-| Chance-constrained | 10.3 % [9.1, 11.8] | 4.00 [3.74, 4.24] | 6.66 [6.24, 7.04] |
+| Nominal (mean composition) | 19.5 % [16.5, 22.6] | 4.71 [4.49, 4.92] | 6.71 [6.37, 7.07] |
+| Expected over composition | **13.1 %** [11.6, 14.8] | 4.18 [3.84, 4.50] | 6.59 [6.10, 7.04] |
+| 5 % quantile | **14.2 %** [12.4, 16.1] | 4.26 [3.97, 4.55] | 6.54 [6.11, 6.97] |
+| CVaR (10 %) | **13.9 %** [12.5, 15.4] | 4.21 [3.91, 4.49] | 6.46 [6.00, 6.89] |
+| Chance-constrained | **13.9 %** [12.3, 15.6] | 4.74 [4.61, 4.88] | **7.38** [7.19, 7.56] |
 | *Oracle nominal (true function)* | *17.6 %* | *5.56* | *8.05* |
 | *Oracle expected (true function)* | *9.6 %* | *5.32* | *8.52* |
 
 Mean over seeds [95 % bootstrap CI; for the oracle rows the CIs are narrower than
-±0.04 because only the deployment batches vary]. Expected utility counts a failed print as 0 MPa.
-Files: [`e1_optimisation/summary.csv`](results/full/e1_optimisation/summary.csv),
+±0.04 because only the deployment batches vary]. Expected utility counts a failed print as
+0 MPa. Bold = better than nominal after Holm correction. Files:
+[`e1_optimisation/summary.csv`](results/full/e1_optimisation/summary.csv),
 [`tests.csv`](results/full/e1_optimisation/tests.csv),
 [`per_seed.csv`](results/full/e1_optimisation/per_seed.csv).
 
 What this shows:
 
-- **With a learned model, the robust objectives did not beat the nominal one in any way we
-  could confirm.** They lowered the failure rate by 1.6–2.0 percentage points, but no
-  difference survived Holm correction (smallest adjusted p = 1.0; smallest unadjusted
-  p = 0.055). Pre-registered H1 (lower failure rate) and H3 (different expected utility)
-  are therefore not supported. H2 (quantile/CVaR raise the weakest parts' strength) went
-  the *wrong way*: CVaR lowered the 5th-percentile strength by 0.34 MPa (95 % CI
-  [−0.61, −0.10]; Holm p = 1.0).
-- **With a perfect model, accounting for composition uncertainty matters.** The oracle
-  versions nearly halve the failure rate (17.6 % → 9.6 %) and raise expected utility by
-  0.47 MPa (6 %) relative to the oracle nominal setting
+- **H1 supported: planning for the whole feedstock distribution prevents failed prints.**
+  All four composition-aware objectives cut the failure rate on unseen batches by 5.3–6.4
+  percentage points relative to nominal (expected: −6.4 points, 95 % CI [−9.0, −4.0],
+  Holm p < 0.001; quantile, CVaR and chance: Holm p = 0.013, 0.004 and 0.003).
+- **H2 contradicted: the tail-risk objectives did not make the weakest parts stronger.**
+  The 5 % quantile of good-part strength went *down* by 0.44–0.52 MPa for the expected,
+  quantile and CVaR objectives (all Holm p ≤ 0.004), and mean strength of good parts by
+  0.73–0.85 MPa. The perfect-model versions show the same trade-off (oracle expected vs
+  oracle nominal: −0.24 MPa at the 5 % quantile). One possible reason, not tested: nominal
+  settings fail on the most difficult batches, so the parts that survive are a selected,
+  stronger subset.
+- **H3: only the chance-constrained objective changed expected utility, upwards.** It
+  raised expected utility by 0.67 MPa (95 % CI [0.37, 0.99], Holm p = 0.007): fewer
+  failures *and* no loss of strength. For expected, quantile and CVaR the fewer failures
+  and the weaker parts cancel (differences −0.12 to −0.25 MPa, Holm p = 1.0).
+- **With a perfect model the same pattern is larger.** Oracle composition-aware settings
+  nearly halve the failure rate (17.6 % → 9.6 %) and raise expected utility by 0.47 MPa
+  (6 %) relative to the oracle nominal setting
   ([`tests_oracle_exploratory.csv`](results/full/e1_optimisation/tests_oracle_exploratory.csv);
   exploratory, not pre-registered). In this simulator the gain comes from **avoiding failed
   prints** (fibre-rich batches clog at high flow), not from stronger weak parts.
-- **Model error, not the robust formulation, is the bottleneck.** Every learned-model
-  recommendation loses about 2 MPa of expected utility against the oracle (regret 1.87–2.37 MPa).
-  The fitted model assigns most of its predictive variance to "noise" (0.36 log-variance at
-  the recommended settings vs 0.015 in the truth) because it cannot resolve the response
-  from ~100 successful prints. Only 19–22 % of its variance is attributed to the feedstock,
-  against 84 % in the ground truth
+- **Model error still costs more than the choice of objective.** Learned-model
+  recommendations lose 1.1–2.1 MPa of expected utility against the oracle optimum
+  (chance-constrained 1.14, CVaR 2.06). The learned model does see the feedstock: 65–69 %
+  of its predictive variance at the recommended settings comes from composition, against
+  82–84 % in the ground truth
   ([`e4_propagation/decomposition.csv`](results/full/e4_propagation/decomposition.csv)).
-  An optimiser cannot be robust to an uncertainty its model does not see.
-- **Ablations** ([`e1b_ablations/`](results/full/e1b_ablations/), 15 seeds each). Only one
-  variant produced Holm-significant differences: with twice the batch-to-batch spread, the
-  *expected* objective cut failures from 16.7 % to 13.1 % (Holm p = 0.041), and CVaR lowered
-  the mean strength of good parts by 1.44 MPa (Holm p = 0.032). Compared with the
-  main run on the same seeds
-  ([`vs_main_paired.csv`](results/full/e1b_ablations/vs_main_paired.csv)), removing
-  composition propagation, removing the physics prior, or telling the optimiser the wrong
-  spread (concentration ×4 or ×0.25) made no clear difference. Only 1 of 72 such
-  comparisons had a 95 % CI excluding zero, about what chance alone would give. A deep
-  ensemble, although its intervals had the best coverage in cross-validation, made much
-  worse recommendations (expected utility about 4.3 MPa instead of about 6.5 MPa): the
-  optimiser exploits its errors. Doubling the data (120 batches) helped every objective
-  (nominal 7.43 MPa), and nominal stayed best.
+- **Ablations** ([`e1b_ablations/`](results/full/e1b_ablations/), 15 seeds each, paired
+  with the main run on the same seeds in
+  [`vs_main_paired.csv`](results/full/e1b_ablations/vs_main_paired.csv); descriptive).
+  *Turning off composition propagation* raised the failure rate of the expected and CVaR
+  objectives by 7.6 and 6.6 points (95 % CIs exclude zero) and made them no better than
+  nominal: propagation is what buys the reduction. *Estimating the feedstock
+  distribution from the 60 training batches* or *telling the optimiser a Dirichlet
+  concentration 4× too low* (spread about twice too wide) made no clear difference; a
+  concentration *4× too high* (spread about half as wide) raised the strength of good parts
+  for expected and CVaR (+0.28 to +0.55 MPa, 95 % CIs exclude zero) with no clear change
+  in failures. A *deep ensemble* in place of the GP made every objective worse
+  (expected utility 0.9–1.6 MPa lower), although its intervals had the best coverage in
+  cross-validation. A *plain GP without the physics prior* gave the nominal objective
+  0.67 MPa more expected utility. *Doubling the data* (120 batches) helped nominal most
+  (+1.04 MPa). On a *shifted feedstock stream* every method failed often (nominal 66 %,
+  expected 54 %, CVaR 55 %; oracle 32–33 %), and the expected and CVaR objectives still
+  failed 10–12 points less than nominal (Holm p ≤ 0.01).
 
 **Models (E2,** [`e2_models/`](results/full/e2_models/)**).** Grouped cross-validation by
 batch, 3 seeds, at 120 training batches (about 207 successful jobs):
 
 | Model | RMSE (MPa) | NLL (log) | CRPS (log) | 90 % coverage |
 |---|---|---|---|---|
-| Physics rule of mixtures | 1.94 | 0.88 | 0.326 | 0.90 |
-| Ridge + interactions | 1.58 | 0.61 | 0.246 | 0.90 |
-| Gradient boosting (quantile) | 1.45 | 1.83 | 0.261 | 0.67 |
-| GP (ARD Matérn) | 1.34 | 0.56 | 0.227 | 0.85 |
-| Heteroscedastic GP | 1.30 | 0.79 | 0.227 | 0.76 |
-| **Hybrid physics + GP** | 1.33 | **0.53** | **0.225** | 0.86 |
-| Deep ensemble (5) | 1.52 | 0.65 | 0.259 | **0.92** |
-| MC dropout | 1.58 | 0.78 | 0.265 | 0.85 |
+| Physics rule of mixtures | 1.79 | 0.56 | 0.237 | 0.91 |
+| Ridge + interactions | 1.04 | −0.15 | 0.118 | 0.90 |
+| Gradient boosting (quantile) | 0.99 | 0.68 | 0.134 | 0.78 |
+| GP (ARD Matérn) | 0.75 | **−0.39** | **0.092** | 0.85 |
+| Heteroscedastic GP | **0.73** | −0.28 | 0.094 | 0.79 |
+| Hybrid physics + GP | 0.75 | −0.39 | 0.092 | 0.86 |
+| Deep ensemble (5) | 1.11 | 0.07 | 0.142 | **0.94** |
+| MC dropout | 1.18 | 0.19 | 0.154 | 0.89 |
 
-- The physics prior helps most with **little data**: at 15 batches the hybrid GP's CRPS is
-  0.377 vs 0.488 for the plain GP; at 120 batches they are equal (0.225 vs 0.227)
-  ([`learning_curves.png`](results/full/figures/learning_curves.png)).
-- The GP family under-covers. Split conformal wrapping fixes this in distribution: the
-  hybrid GP with conformal intervals covers 93 % of new-batch outcomes at a nominal 90 %.
-  Under feedstock shift it drops to 85 %
-  ([`conformal.csv`](results/full/e2_models/conformal.csv)). With only 15 training
-  batches, conformal intervals are infinite: the calibration set is too small for a 90 %
-  guarantee.
+- The GPs are clearly the best point and probabilistic predictors; the physics prior adds
+  nothing at 120 batches (CRPS 0.0922 vs 0.0920) and **hurts with little data** (0.336 vs
+  0.264 at 15 batches) ([`learning_curves.png`](results/full/figures/learning_curves.png)).
+- The GP family under-covers (85–86 % at a nominal 90 %). Split conformal wrapping
+  fixes this at 30–60 batches (hybrid GP: 91–93 % on new batches) but not at 120 batches
+  (88 %) or under feedstock shift at 120 batches (80 %); one untested explanation is that
+  residuals from the same batch are correlated, which breaks exchangeability ([`conformal.csv`](results/full/e2_models/conformal.csv)). With 15 training
+  batches the conformal intervals are infinite: the calibration set is too small for a
+  90 % guarantee.
 - Print-success classifier: gradient boosting with isotonic calibration has Brier score
   0.146 vs 0.163 for regularised logistic regression (base rate 0.43)
   ([`classifier.csv`](results/full/e2_models/classifier.csv),
@@ -140,14 +159,19 @@ batch, 3 seeds, at 120 training batches (about 207 successful jobs):
 **Other results.**
 
 - *Active learning (E3,* [`per_round.csv`](results/full/e3_active_learning/per_round.csv)*)*:
-  with 20 initial jobs and 8 rounds of 4, no strategy (targeted variance reduction,
-  cost-aware, max-variance, Sobol) was distinguishable from random selection. Regret did not
-  fall steadily with more jobs for any strategy ([`active_learning.png`](results/full/figures/active_learning.png)).
+  with 20 initial jobs and 8 rounds of 4, the mean regret of the recommendation did not
+  fall for any strategy (5.09 MPa after 20 jobs; 4.78–6.58 MPa after 52). Targeted
+  variance reduction, max-variance and Sobol designs were indistinguishable from random
+  selection; **cost-aware selection was worse than random** by 1.38 MPa (paired 95 % CI
+  [0.60, 2.19]). Its campaigns ended with fewer successful jobs (19.6 of 52 vs 24.1 for
+  random) and its recommendations printed less reliably (true P(success) 0.30 vs 0.52),
+  consistent with it favouring cheap, fast prints that fail more often
+  ([`active_learning.png`](results/full/figures/active_learning.png)).
 - *Propagation (E4)*: Monte Carlo with 256 draws estimates the predictive standard
-  deviation within about 1 % (learned models) to 4 % (ground truth). The unscented
-  transform (11 evaluations) is accurate for the smooth learned models (2.5 % error,
-  hybrid GP) but not for the ground truth (26 %, worse than 16 random draws)
-  ([`errors.csv`](results/full/e4_propagation/errors.csv)).
+  deviation within 1–2 % (learned models) and 4 % (ground truth). The unscented
+  transform (11 evaluations) is accurate for the smooth learned models (0.4 % error for
+  the deep ensemble, 6 % for the hybrid GP) but not for the ground truth (26 %, worse than
+  16 random draws) ([`errors.csv`](results/full/e4_propagation/errors.csv)).
 - *Sensitivity (E5,* [`global.csv`](results/full/e5_sensitivity/global.csv)*)*: over the
   search space, nozzle temperature dominates both strength (total Sobol index 0.58) and
   print success (0.74), followed by composition (0.25 and 0.29). At the oracle's
@@ -155,9 +179,10 @@ batch, 3 seeds, at 120 training batches (about 207 successful jobs):
   (first-order 0.49) and fibre content most of the success variation (0.47)
   ([`components.csv`](results/full/e5_sensitivity/components.csv)).
 - *Pareto (E6,* [`front.csv`](results/full/e6_pareto/front.csv)*)*: raising the allowed
-  print time from 0.75× to 1.4× the reference print raises the realised CVaR(10 %) strength
-  of the CVaR-optimal setting from 2.6 to 4.6 MPa; beyond that, extra print time buys
-  nothing ([`pareto.png`](results/full/figures/pareto.png)).
+  print time from 0.75× to 1.5× the reference print raises the realised CVaR(10 %)
+  strength of the CVaR-optimal setting from 2.3 to 4.7 MPa; beyond that, extra print time
+  buys nothing, and the remaining wiggles of the front (±0.1 MPa) are optimiser noise
+  ([`pareto.png`](results/full/figures/pareto.png)).
 - *Public data (E7, real measurements, not synthetic)*: on the 50-row Kaggle PLA/ABS
   dataset (10 × repeated 5-fold CV), all four models tested had similar CRPS on log strength
   (0.206–0.212). Quantile gradient boosting was badly overconfident (NLL 25.6), and the deep
@@ -165,22 +190,41 @@ batch, 3 seeds, at 120 training batches (about 207 successful jobs):
   ([`e7_public_benchmark.csv`](results/full/e7_public_benchmark.csv)). The simulator's effect
   directions match the data for layer height, infill and fan, and disagree for nozzle temperature, bed temperature and speed
   ([`e7_public_trends.csv`](results/full/e7_public_trends.csv)). This dataset contains no
-  recycled material.
+  recycled material. E7 does not use the synthetic generator and is unchanged from v1.0.0.
 
-## 3. Quickstart
+## 3. Virtual Lab (in the browser)
+
+[`web/`](web/) is a browser version of the whole loop, for exploring the simulator and the
+method without installing anything: a print **bench** (ground truth at your settings, for
+the average batch and for 48 random batches), a virtual **campaign** (or your own CSV,
+which never leaves the browser), **model** training with a hold-out check, **optimise &
+deploy** on fresh unseen batches, an **active-learning** loop that tracks the true regret,
+and the **study results** above. Everything in it is synthetic unless you import real data.
+
+The simulator, GP, boosted-tree classifier, objectives, CMA-ES and acquisition functions
+are re-implemented in TypeScript and checked against golden files exported from the
+Python code ([ADR-020](docs/DECISIONS.md)); numbers produced in the browser are a second
+implementation, not the study. `cd web && npm ci && npm run build` writes a single
+self-contained `web/dist/index.html` that also works when opened from disk; see
+[web/README.md](web/README.md).
+
+## 4. Quickstart
 
 ```bash
 git clone https://github.com/BAFOOD123/RobustPrint.git && cd RobustPrint
 make setup          # creates .venv, installs CPU-only PyTorch and the package
-make fast           # end-to-end smoke run (83 s on a 4-core CPU) -> results/fast/
+make fast           # end-to-end smoke run (1–2 min on a 4-core CPU) -> results/fast/
 ```
 
 `make test` runs the test suite. `make full` reproduces every number in this README
-(16 min 10 s on the 4-core CPU container used here; per-stage timings are in
-`results/full/manifest.json`). `make public-data` first downloads the optional Kaggle
-dataset for E7. `make app` starts the dashboard.
+(25 min on the 4-core CPU container used for v1.1.0, which ran the v1.0.0 code about 1.6×
+slower than the container where v1.0.0 took 16 min; per-stage timings are in
+`results/full/manifest.json`). `make fast` took 83 s on the first container and 111 s on
+the second, without the optional public data; `make public-data` downloads the Kaggle
+dataset for E7, which then adds about 3 minutes to either run. `make app` starts the
+dashboard.
 
-## 4. Using your own data
+## 5. Using your own data
 
 1. Record experiments in the CSV schema ([`data/schema.md`](data/schema.md); example in
    [`data/examples/`](data/examples/)). `robustprint starter-design` writes a 20-job
@@ -194,7 +238,7 @@ dataset for E7. `make app` starts the dashboard.
 The step-by-step lab guide, including how to measure composition and how to read the
 outputs, is [docs/REAL_DATA_GUIDE.md](docs/REAL_DATA_GUIDE.md).
 
-## 5. Method overview
+## 6. Method overview
 
 ```mermaid
 flowchart LR
@@ -234,7 +278,7 @@ flowchart LR
 
 Full equations and the protocol: [docs/METHODS.md](docs/METHODS.md).
 
-## 6. Limitations and what did not work
+## 7. Limitations and what did not work
 
 **Limitations** (full list: [docs/LIMITATIONS.md](docs/LIMITATIONS.md)): the simulator
 uses simplified physics with assumed coefficients and has never been compared with real
@@ -245,25 +289,36 @@ validated for flight or safety-critical use**.
 
 **What did not work**
 
-1. **Robust objectives with a learned model.** No pre-registered benefit over nominal was
-   confirmed (see §2). Quantile and CVaR objectives were slightly *worse* in lower-tail
-   strength, because they are pessimistic about an inflated, mostly lack-of-fit "noise" term.
-2. **Active learning.** Model-based experiment selection did not beat random or Sobol
-   designs within 52 jobs. With so few successful prints the GP is too weak to target anything.
-3. **The unscented transform** on the ground truth (26 % error in the predictive spread).
-4. **Heteroscedastic GP:** no better than the homoscedastic GP (NLL 0.79 vs 0.56).
-5. **Deep ensembles for optimisation:** good calibration in cross-validation did not
-   translate into good recommendations.
-6. **First attempts** (fixed before the final runs and documented in DECISIONS/PROGRESS):
+1. **Our own data generator, in v1.0.0.** Failed replicate specimens were averaged into
+   job strengths as 0 MPa (see the correction in §2). The test suite checked shapes,
+   ranges and determinism but not that job means were unbiased; a regression test now
+   does. The v1.0.0 explanation that the GP "assigned most of its variance to noise" was
+   largely an artefact of this bug.
+2. **Tail-risk objectives for the weakest parts.** Quantile and CVaR objectives reduced
+   failures but lowered the 5th-percentile strength of good parts instead of raising it
+   (H2 contradicted, §2), with the learned and with the perfect model.
+3. **Active learning.** No model-based strategy beat random or Sobol designs within 52
+   jobs, regret did not fall with more jobs, and cost-aware selection was significantly
+   worse than random. With 8–24 successful prints the GP is too weak to target anything.
+4. **The physics prior.** It did not help the GP at any data size and hurt at 15 batches.
+5. **The unscented transform** on the ground truth (26 % error in the predictive spread).
+6. **Heteroscedastic GP:** no better than the homoscedastic GP (NLL −0.28 vs −0.39).
+7. **Deep ensembles for optimisation:** the best interval coverage in cross-validation did
+   not translate into good recommendations.
+8. **Conformal intervals under shift and with correlated batches:** 80–88 % coverage at a
+   nominal 90 % with 120 training batches.
+9. **First attempts** (fixed before the final runs and documented in DECISIONS/PROGRESS):
    NLL-trained neural nets were badly overconfident until early stopping (ADR-015). The GP
    learned near-zero noise until a 3 % noise floor (ADR-014). A poly-2 logistic success
    model was worse than predicting the base rate at default regularisation. In the first
-   simulator version, nominal and robust optima were identical (ADR-012).
-7. **Out-of-distribution feedstock:** when batches came from a shifted stream (more fibre
-   and contaminant), every method failed on 45–48 % of prints (oracle: 33 %), and conformal
-   coverage fell below nominal.
+   simulator version, nominal and robust optima were identical (ADR-012). In the browser
+   port, the logistic classifier invented a raster-angle effect and small search budgets
+   left CMA-ES unconverged (ADR-020).
+10. **Out-of-distribution feedstock:** when batches came from a shifted stream (more fibre
+    and contaminant), every method failed on 54–66 % of prints (oracle: 32–33 %), and
+    conformal coverage fell below nominal.
 
-## 7. Repository map
+## 8. Repository map
 
 ```
 src/robustprint/
@@ -277,6 +332,7 @@ src/robustprint/
   viz/          figures
   cli.py        robustprint command-line interface
 app/            Streamlit dashboard
+web/            Virtual Lab: TypeScript port of the simulator and method, runs in the browser
 configs/        fast.yaml and full.yaml experiment configurations
 data/           schema.md, examples, (git-ignored) synthetic and external data
 docs/           METHODS, LIMITATIONS, DECISIONS, REFERENCES, MODEL_CARD, REAL_DATA_GUIDE
@@ -284,7 +340,7 @@ results/full/   all raw result files and figures quoted above
 tests/          unit, property-based and integration tests
 ```
 
-## 8. References
+## 9. References
 
 All references were verified and are listed with links in
 [docs/REFERENCES.md](docs/REFERENCES.md). Key ones: Egozcue et al. 2003 (ilr);
@@ -294,18 +350,18 @@ measures in BO); Hansen 2016 (CMA-ES); Saltelli et al. 2010 (Sobol estimators); 
 al. 2008 and Wool & O'Connor 1981 (bond formation); Halpin & Kardos 1976; NASA
 Refabricator and 3D Printing in Zero-G reports.
 
-## 9. Citation
+## 10. Citation
 
 ```bibtex
 @software{robustprint2026,
   title   = {RobustPrint: uncertainty-aware print optimisation for recycled, variable-composition feedstock},
   year    = {2026},
-  version = {1.0.0},
+  version = {1.1.0},
   note    = {Results are from synthetic data generated by the included simulator}
 }
 ```
 
-## 10. Licence
+## 11. Licence
 
 Code: [MIT](LICENSE). The optional Kaggle dataset has an unknown licence and is not
 redistributed; it is downloaded on demand by `make public-data`.

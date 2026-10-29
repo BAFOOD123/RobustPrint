@@ -1,7 +1,7 @@
 {
  "label": "SYNTHETIC DATA (RobustPrint simulator) - not experimental results",
  "version": "1.1.0",
- "commit": "28a4e0e61c099e26015596933536a7723a95395e",
+ "commit": "4fda6ef2177fbf4f16a62c4d64e5381e85df6d21",
  "e1": {
   "seeds": 30,
   "trainJobs": 240,
@@ -282,193 +282,193 @@
    {
     "method": "expected",
     "metric": "expected_utility",
-    "diff": -0.1242,
-    "lo": -0.5453,
-    "hi": 0.2452,
+    "diff": -0.124203,
+    "lo": -0.545327,
+    "hi": 0.245172,
     "pHolm": 1.0
    },
    {
     "method": "expected",
     "metric": "failure_rate",
-    "diff": -0.0639,
-    "lo": -0.0904,
-    "hi": -0.0399,
+    "diff": -0.063867,
+    "lo": -0.090434,
+    "hi": -0.039949,
     "pHolm": 0.00087
    },
    {
     "method": "expected",
     "metric": "q05_strength",
-    "diff": -0.5226,
-    "lo": -0.7817,
-    "hi": -0.2995,
+    "diff": -0.522585,
+    "lo": -0.781744,
+    "hi": -0.299543,
     "pHolm": 0.00016
    },
    {
     "method": "expected",
     "metric": "cvar10_strength",
-    "diff": -0.5012,
-    "lo": -0.7456,
-    "hi": -0.2905,
+    "diff": -0.501174,
+    "lo": -0.745638,
+    "hi": -0.290509,
     "pHolm": 8e-05
    },
    {
     "method": "expected",
     "metric": "mean_strength",
-    "diff": -0.7542,
-    "lo": -1.1817,
-    "hi": -0.3863,
+    "diff": -0.75418,
+    "lo": -1.18171,
+    "hi": -0.386348,
     "pHolm": 0.00074
    },
    {
     "method": "expected",
     "metric": "p_meet_threshold",
     "diff": -0.0249,
-    "lo": -0.0943,
-    "hi": 0.0267,
+    "lo": -0.094302,
+    "hi": 0.026652,
     "pHolm": 1.0
    },
    {
     "method": "quantile",
     "metric": "expected_utility",
-    "diff": -0.1755,
-    "lo": -0.6011,
-    "hi": 0.2297,
+    "diff": -0.175499,
+    "lo": -0.60111,
+    "hi": 0.229665,
     "pHolm": 1.0
    },
    {
     "method": "quantile",
     "metric": "failure_rate",
-    "diff": -0.0528,
-    "lo": -0.0823,
-    "hi": -0.0234,
+    "diff": -0.052817,
+    "lo": -0.082318,
+    "hi": -0.023433,
     "pHolm": 0.01341
    },
    {
     "method": "quantile",
     "metric": "q05_strength",
-    "diff": -0.4437,
-    "lo": -0.6779,
-    "hi": -0.2396,
+    "diff": -0.443657,
+    "lo": -0.677904,
+    "hi": -0.239624,
     "pHolm": 0.00044
    },
    {
     "method": "quantile",
     "metric": "cvar10_strength",
-    "diff": -0.4234,
-    "lo": -0.6491,
-    "hi": -0.2263,
+    "diff": -0.423423,
+    "lo": -0.649135,
+    "hi": -0.226316,
     "pHolm": 0.00087
    },
    {
     "method": "quantile",
     "metric": "mean_strength",
-    "diff": -0.7339,
+    "diff": -0.73391,
     "lo": -1.1269,
-    "hi": -0.3971,
+    "hi": -0.397057,
     "pHolm": 0.00027
    },
    {
     "method": "quantile",
     "metric": "p_meet_threshold",
-    "diff": -0.0115,
-    "lo": -0.0601,
-    "hi": 0.0348,
+    "diff": -0.011467,
+    "lo": -0.060119,
+    "hi": 0.034783,
     "pHolm": 1.0
    },
    {
     "method": "cvar",
     "metric": "expected_utility",
-    "diff": -0.2523,
-    "lo": -0.7255,
-    "hi": 0.1479,
+    "diff": -0.252302,
+    "lo": -0.72553,
+    "hi": 0.147928,
     "pHolm": 1.0
    },
    {
     "method": "cvar",
     "metric": "failure_rate",
-    "diff": -0.0558,
-    "lo": -0.0827,
-    "hi": -0.031,
+    "diff": -0.05585,
+    "lo": -0.082685,
+    "hi": -0.030967,
     "pHolm": 0.00448
    },
    {
     "method": "cvar",
     "metric": "q05_strength",
-    "diff": -0.4927,
-    "lo": -0.7659,
-    "hi": -0.2624,
+    "diff": -0.492738,
+    "lo": -0.765892,
+    "hi": -0.262427,
     "pHolm": 0.00324
    },
    {
     "method": "cvar",
     "metric": "cvar10_strength",
-    "diff": -0.4773,
-    "lo": -0.7365,
-    "hi": -0.2597,
+    "diff": -0.477298,
+    "lo": -0.736517,
+    "hi": -0.259719,
     "pHolm": 0.00245
    },
    {
     "method": "cvar",
     "metric": "mean_strength",
-    "diff": -0.8543,
+    "diff": -0.854335,
     "lo": -1.3031,
-    "hi": -0.4708,
+    "hi": -0.470794,
     "pHolm": 0.00047
    },
    {
     "method": "cvar",
     "metric": "p_meet_threshold",
-    "diff": -0.0171,
-    "lo": -0.0866,
-    "hi": 0.0359,
+    "diff": -0.017083,
+    "lo": -0.086602,
+    "hi": 0.035917,
     "pHolm": 1.0
    },
    {
     "method": "chance",
     "metric": "expected_utility",
-    "diff": 0.668,
-    "lo": 0.3665,
-    "hi": 0.9867,
+    "diff": 0.667986,
+    "lo": 0.366521,
+    "hi": 0.986655,
     "pHolm": 0.00669
    },
    {
     "method": "chance",
     "metric": "failure_rate",
-    "diff": -0.0565,
-    "lo": -0.0836,
-    "hi": -0.0312,
+    "diff": -0.05645,
+    "lo": -0.083552,
+    "hi": -0.031165,
     "pHolm": 0.00283
    },
    {
     "method": "chance",
     "metric": "q05_strength",
-    "diff": 0.0315,
-    "lo": -0.1694,
-    "hi": 0.2393,
+    "diff": 0.031522,
+    "lo": -0.169373,
+    "hi": 0.239259,
     "pHolm": 1.0
    },
    {
     "method": "chance",
     "metric": "cvar10_strength",
-    "diff": 0.0328,
+    "diff": 0.032764,
     "lo": -0.1586,
-    "hi": 0.2317,
+    "hi": 0.231694,
     "pHolm": 1.0
    },
    {
     "method": "chance",
     "metric": "mean_strength",
-    "diff": 0.2136,
-    "lo": -0.1221,
-    "hi": 0.57,
+    "diff": 0.213595,
+    "lo": -0.122135,
+    "hi": 0.570045,
     "pHolm": 1.0
    },
    {
     "method": "chance",
     "metric": "p_meet_threshold",
-    "diff": 0.0663,
-    "lo": 0.04,
-    "hi": 0.0936,
+    "diff": 0.066333,
+    "lo": 0.039983,
+    "hi": 0.093634,
     "pHolm": 0.00448
    }
   ]
@@ -802,112 +802,112 @@
    "variant": "model_gp",
    "method": "expected",
    "metric": "q05_strength",
-   "diff": -0.6559,
+   "diff": -0.65585,
    "pHolm": 0.00427
   },
   {
    "variant": "model_gp",
    "method": "expected",
    "metric": "cvar10_strength",
-   "diff": -0.6423,
+   "diff": -0.642314,
    "pHolm": 0.00366
   },
   {
    "variant": "model_gp",
    "method": "expected",
    "metric": "mean_strength",
-   "diff": -1.0095,
+   "diff": -1.00946,
    "pHolm": 0.00549
   },
   {
    "variant": "model_gp",
    "method": "cvar",
    "metric": "failure_rate",
-   "diff": -0.0642,
+   "diff": -0.064167,
    "pHolm": 0.04028
   },
   {
    "variant": "model_gp",
    "method": "cvar",
    "metric": "q05_strength",
-   "diff": -0.8103,
+   "diff": -0.810347,
    "pHolm": 0.01221
   },
   {
    "variant": "model_gp",
    "method": "cvar",
    "metric": "cvar10_strength",
-   "diff": -0.7839,
+   "diff": -0.783945,
    "pHolm": 0.0141
   },
   {
    "variant": "model_gp",
    "method": "cvar",
    "metric": "mean_strength",
-   "diff": -1.3185,
+   "diff": -1.31848,
    "pHolm": 0.00366
   },
   {
    "variant": "train_120",
    "method": "expected",
    "metric": "q05_strength",
-   "diff": -0.3876,
+   "diff": -0.387629,
    "pHolm": 0.01276
   },
   {
    "variant": "train_120",
    "method": "expected",
    "metric": "cvar10_strength",
-   "diff": -0.3718,
+   "diff": -0.371756,
    "pHolm": 0.02014
   },
   {
    "variant": "train_120",
    "method": "expected",
    "metric": "mean_strength",
-   "diff": -0.603,
+   "diff": -0.602972,
    "pHolm": 0.03418
   },
   {
    "variant": "train_120",
    "method": "cvar",
    "metric": "q05_strength",
-   "diff": -0.4078,
+   "diff": -0.40779,
    "pHolm": 0.0376
   },
   {
    "variant": "train_120",
    "method": "cvar",
    "metric": "cvar10_strength",
-   "diff": -0.3858,
+   "diff": -0.385843,
    "pHolm": 0.02362
   },
   {
    "variant": "train_120",
    "method": "cvar",
    "metric": "mean_strength",
-   "diff": -0.7883,
+   "diff": -0.788251,
    "pHolm": 0.00732
   },
   {
    "variant": "no_epistemic",
    "method": "expected",
    "metric": "failure_rate",
-   "diff": -0.0857,
+   "diff": -0.085667,
    "pHolm": 0.01025
   },
   {
    "variant": "no_epistemic",
    "method": "cvar",
    "metric": "mean_strength",
-   "diff": -0.4701,
+   "diff": -0.470056,
    "pHolm": 0.047
   },
   {
    "variant": "told_concentration_x0.25",
    "method": "cvar",
    "metric": "failure_rate",
-   "diff": -0.0577,
+   "diff": -0.057733,
    "pHolm": 0.04028
   },
   {
@@ -921,35 +921,35 @@
    "variant": "ood_deploy_shifted",
    "method": "expected",
    "metric": "q05_strength",
-   "diff": -0.3556,
+   "diff": -0.355553,
    "pHolm": 0.03357
   },
   {
    "variant": "ood_deploy_shifted",
    "method": "expected",
    "metric": "cvar10_strength",
-   "diff": -0.346,
+   "diff": -0.345961,
    "pHolm": 0.03845
   },
   {
    "variant": "ood_deploy_shifted",
    "method": "expected",
    "metric": "mean_strength",
-   "diff": -0.5485,
+   "diff": -0.548504,
    "pHolm": 0.04297
   },
   {
    "variant": "ood_deploy_shifted",
    "method": "cvar",
    "metric": "failure_rate",
-   "diff": -0.104,
+   "diff": -0.103967,
    "pHolm": 0.0094
   },
   {
    "variant": "ood_deploy_shifted",
    "method": "cvar",
    "metric": "mean_strength",
-   "diff": -0.59,
+   "diff": -0.590009,
    "pHolm": 0.04297
   }
  ],

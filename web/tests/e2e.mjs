@@ -48,7 +48,7 @@ const run = async (colorScheme, width) => {
   await page.selectOption("#budget", "800");
   await page.selectOption("#deploy-n", "300");
   await page.click("button:has-text('Optimise and deploy')");
-  await page.waitForSelector("text=Recommended settings and what really happened", { timeout: 180_000 });
+  await page.waitForSelector("text=Recommended settings and what happened in the simulator", { timeout: 180_000 });
   const rows = await page.locator("table tbody tr").count();
   if (rows !== 6) errors.push(`${colorScheme}/${width}: expected 6 recommendations (3 objectives × 2 models), got ${rows}`);
   await assertNoOverflow("optimise");
@@ -70,9 +70,34 @@ const run = async (colorScheme, width) => {
   await shot("6-study");
   await ctx.close();
 };
+// Imported data: round-trip the campaign CSV through the import panel; Optimise must then
+// report model predictions only (the simulator's truth says nothing about a real material).
+const runImported = async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1200, height: 900 }, ignoreHTTPSErrors: !!process.env.E2E_PROXY });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => errors.push(`import: ${e.message}`));
+  await page.goto(pathToFileURL(page_).href + "#campaign");
+  await page.click("button:has-text('Run campaign')");
+  await page.click("button:has-text('Show CSV')");
+  const csv = await page.inputValue("#csv-out");
+  await page.fill("#csv-paste", csv);
+  await page.click("button:has-text('Validate')");
+  await page.click("button:has-text('valid jobs')");
+  await page.click('nav.tabs a[href="#model"]');
+  await page.click("button:has-text('Train model')");
+  await page.waitForSelector("text=What the model reacts to", { timeout: 120_000 });
+  await page.click('nav.tabs a[href="#optimise"]');
+  await page.selectOption("#budget", "800");
+  await page.click("button:has-text('Optimise and deploy')");
+  await page.waitForSelector("h3:has-text('Recommended settings')", { timeout: 180_000 });
+  if (await page.locator("text=Failed prints on fresh batches").count()) errors.push("import: simulated deployment shown for imported data");
+  if (!(await page.locator("th:has-text('Pred. CVaR 10 %')").count())) errors.push("import: predicted columns missing");
+  await ctx.close();
+};
 const t0 = Date.now();
 await run("light", 1360);
 await run("dark", 390);
+await runImported();
 await browser.close();
 console.log(`e2e finished in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 if (errors.length) {

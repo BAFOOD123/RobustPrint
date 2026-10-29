@@ -207,7 +207,8 @@ Before this protocol was written, an 8-seed pilot of E1 (different base seed) wa
 check the pipeline and its runtime. In that pilot the composition-aware objectives had
 lower failure rates than nominal, and no clear difference in expected utility. The
 simulator was frozen before the pilot (ADR-012); after the pilot only runtime settings
-(thread pinning) were changed.
+(thread pinning) were changed. The pilot used the v1.0.0 data generator, which had the
+replicate-averaging bug described in §8.7 item 4.
 
 ### 8.7 Deviations from the protocol (recorded after the runs)
 
@@ -227,3 +228,16 @@ simulator was frozen before the pilot (ADR-012); after the pilot only runtime se
    where only deployment batches vary between seeds); descriptive paired differences of
    each ablation against the main run on the same seeds (`e1b_ablations/vs_main_paired.csv`);
    and the ground-truth variance decomposition at the recommended settings (E4).
+4. **Data-generator bug and full re-run (v1.1.0).** After v1.0.0 was released, porting the
+   generator to TypeScript showed that `experiments_frame` drew print success separately
+   for each replicate specimen and averaged failed specimens into the job's strength as
+   0 MPa, so about 46 % of successful job means were biased downward. This violated the
+   data model of §3 and ADR-003 (each row is one job; failed jobs have no strength). The generator was fixed (`print_job`, with a regression test), the active-learning
+   loop was fixed in the same way, and **every experiment was re-run** with the protocol,
+   configurations, seeds, hypotheses and tests unchanged. Nothing else in the code changed
+   between the two runs. The v1.0.0 results are superseded; the changes in conclusions are
+   listed in `CHANGELOG.md`. The final numbers come from a second clean run of the corrected
+   code, which reproduced the first corrected run's result files byte-for-byte apart from
+   wall-clock timings. Its manifest marks the source as dirty because the version string
+   (`__version__`, 1.0.0 → 1.1.0) was not yet committed; no other file under `src/`
+   differed from commit `4fda6ef`.

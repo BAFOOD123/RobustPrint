@@ -2640,91 +2640,91 @@
       "abs_err_mean": 0.004897,
       "abs_err_sd": 0.002094,
       "rel_err_sd": 0.005238,
-      "seconds": 0.02943
+      "seconds": 0.030398
     },
     "deep_ensemble|mc_16": {
       "abs_err_mean": 0.043295,
       "abs_err_sd": 0.016718,
       "rel_err_sd": 0.041849,
-      "seconds": 0.013023
+      "seconds": 0.014137
     },
     "deep_ensemble|mc_256": {
       "abs_err_mean": 0.010451,
       "abs_err_sd": 0.003828,
       "rel_err_sd": 0.009525,
-      "seconds": 0.022661
+      "seconds": 0.023763
     },
     "deep_ensemble|mc_64": {
       "abs_err_mean": 0.018474,
       "abs_err_sd": 0.00764,
       "rel_err_sd": 0.019127,
-      "seconds": 0.019973
+      "seconds": 0.020407
     },
     "deep_ensemble|unscented": {
       "abs_err_mean": 0.000311,
       "abs_err_sd": 0.001713,
       "rel_err_sd": 0.004253,
-      "seconds": 0.097732
+      "seconds": 0.066261
     },
     "ground_truth|mc_1024": {
       "abs_err_mean": 0.00711,
       "abs_err_sd": 0.005848,
       "rel_err_sd": 0.018538,
-      "seconds": 0.002721
+      "seconds": 0.002732
     },
     "ground_truth|mc_16": {
       "abs_err_mean": 0.059286,
       "abs_err_sd": 0.043878,
       "rel_err_sd": 0.1389,
-      "seconds": 0.000931
+      "seconds": 0.000956
     },
     "ground_truth|mc_256": {
       "abs_err_mean": 0.014727,
       "abs_err_sd": 0.011377,
       "rel_err_sd": 0.035821,
-      "seconds": 0.00141
+      "seconds": 0.001505
     },
     "ground_truth|mc_64": {
       "abs_err_mean": 0.0253,
       "abs_err_sd": 0.020166,
       "rel_err_sd": 0.064392,
-      "seconds": 0.001081
+      "seconds": 0.001069
     },
     "ground_truth|unscented": {
       "abs_err_mean": 0.04373,
       "abs_err_sd": 0.08184,
       "rel_err_sd": 0.258058,
-      "seconds": 0.001493
+      "seconds": 0.00172
     },
     "hybrid_gp|mc_1024": {
       "abs_err_mean": 0.005253,
       "abs_err_sd": 0.003426,
       "rel_err_sd": 0.010684,
-      "seconds": 0.186273
+      "seconds": 0.076625
     },
     "hybrid_gp|mc_16": {
       "abs_err_mean": 0.047878,
       "abs_err_sd": 0.027915,
       "rel_err_sd": 0.086448,
-      "seconds": 0.084246
+      "seconds": 0.06516
     },
     "hybrid_gp|mc_256": {
       "abs_err_mean": 0.011577,
       "abs_err_sd": 0.006172,
       "rel_err_sd": 0.019199,
-      "seconds": 0.078601
+      "seconds": 0.067296
     },
     "hybrid_gp|mc_64": {
       "abs_err_mean": 0.019824,
       "abs_err_sd": 0.011698,
       "rel_err_sd": 0.036243,
-      "seconds": 0.093852
+      "seconds": 0.067397
     },
     "hybrid_gp|unscented": {
       "abs_err_mean": 0.006611,
       "abs_err_sd": 0.018339,
       "rel_err_sd": 0.057418,
-      "seconds": 0.384228
+      "seconds": 0.107079
     }
   },
   "e4_decomposition": [

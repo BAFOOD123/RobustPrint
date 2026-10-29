@@ -154,6 +154,15 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
   padding: 14px; max-height: calc(100vh - 24px); overflow: auto;
 }
 @media (max-width: 900px) { .rail { position: static; max-height: none; } }
+.rail > details > .rail-section + .rail-section { margin-top: 14px; }
+.rail > details[open] > summary { margin-bottom: 14px; }
+.rail-summary { display: none; }
+@media (max-width: 900px) {
+  .rail-summary { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 10px; cursor: pointer; font-family: var(--display); font-weight: 600; font-size: 1.05rem; list-style: none; }
+  .rail-summary::-webkit-details-marker { display: none; }
+  .rail-summary::after { content: "Edit ▾"; font-family: var(--mono); font-size: 0.72rem; color: var(--accent); }
+  .rail > details[open] > .rail-summary::after { content: "Hide ▴"; }
+}
 .rail-section { display: flex; flex-direction: column; gap: 9px; }
 .rail-section + .rail-section { border-top: 1px dashed var(--line); padding-top: 12px; }
 .rail-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }

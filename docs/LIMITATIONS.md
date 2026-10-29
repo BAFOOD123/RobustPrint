@@ -20,8 +20,8 @@ Read this before quoting any number from this repository.
   benefit is partly *built in*. Whether real recycled feedstock has such interactions, and
   how strong they are, is an empirical question.
 - Modelled tensile strengths are low compared with virgin filament: successful jobs in a
-  space-filling campaign range from about 0.4 to 10 MPa (median about 3 MPa), and the best
-  settings reach a mean of about 9.4 MPa on fresh batches.
+  space-filling campaign range from about 0.9 to 11 MPa (median about 4.2 MPa; about 43 %
+  of jobs print), and the best settings reach a mean of about 9.4 MPa on fresh batches.
   This reflects the assumed immiscibility, contaminants and degradation; it is not a
   prediction for any real material.
 
@@ -48,7 +48,9 @@ Read this before quoting any number from this repository.
 
 - Models see 13 inputs; with fewer than ~100 successful jobs, predictions are rough
   (learning curves in `results/full/figures/learning_curves.png`). The GP family
-  under-covers on new batches unless wrapped with conformal prediction.
+  under-covers on new batches (85–86 % at a nominal 90 %); split conformal wrapping fixes
+  this at 30–60 training batches but not at 120 (88 %), possibly because residuals from the
+  same batch are correlated.
 - Conformal guarantees are marginal and assume exchangeable batches. They do not hold
   under feedstock shift (see the OOD rows of `results/full/e2_models/conformal.csv`).
 - The robust objectives integrate over a *stated* feedstock distribution. If that
@@ -57,6 +59,10 @@ Read this before quoting any number from this repository.
 - Robust objectives that include epistemic uncertainty are pessimistic where the model is
   uncertain. With little data that can steer recommendations towards well-sampled but
   mediocre settings.
+- The optimiser is a stochastic search with a finite budget (800 evaluations for learned
+  models, 1 500 for the oracle). Differences between recommendations of about 0.1 MPa can
+  be optimiser noise: the Pareto front in E6 is not monotone beyond 1.5× the reference
+  print time for that reason.
 - The unscented transform was cheap but inaccurate for the simulator's nonlinear response.
   Monte Carlo with ≥ 256 draws is the default.
 - Statistical tests are paired Wilcoxon tests over simulation seeds with Holm correction
@@ -66,6 +72,12 @@ Read this before quoting any number from this repository.
   simulator, the hyperparameters and the protocol were all designed by the same author
   (researcher degrees of freedom, partly mitigated by pre-registering the protocol).
 
+- **v1.0.0 results are invalid.** The data generator of v1.0.0 averaged failed replicate
+  specimens into job strengths as 0 MPa. All results were regenerated in v1.1.0 with the
+  same protocol (METHODS §8.7); conclusions drawn from v1.0.0 numbers should be discarded.
+  The bug shows that tests of shapes, ranges and determinism do not catch a biased
+  generator; the regression test added for it checks that job means are unbiased.
+
 ## 4. Public data
 
 - The Kaggle dataset has 50 rows of virgin PLA/ABS from one printer, an unknown licence,
@@ -73,7 +85,18 @@ Read this before quoting any number from this repository.
   temperature). It says nothing about recycled or mixed feedstock. We use it only for a
   trend check and a small benchmark, both clearly separated from the main results.
 
-## 5. Not for flight or safety-critical use
+## 5. The browser Virtual Lab
+
+- `web/` re-implements the simulator and the method in TypeScript. It is tested against
+  golden files from the Python code (ADR-020), but models fitted in the browser match the
+  Python ones only statistically (different hyperparameter optimiser and CV folds), and
+  deep ensembles, MC dropout, the heteroscedastic GP, conformal wrappers and Sobol analysis
+  are not ported. The pre-registered results are only those on its Study step, which are
+  read from `results/full`.
+- With imported (real) data the Virtual Lab can train, recommend and propose experiments,
+  but it cannot score anything: the simulator's hidden truth is not your material.
+
+## 6. Not for flight or safety-critical use
 
 The models, settings and code are **not validated for flight hardware, crewed
 environments or any safety-critical application**. Printed parts from recycled

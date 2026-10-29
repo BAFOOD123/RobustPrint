@@ -195,12 +195,12 @@ Short records: problem, options, choice, reason. Numbered in the order they were
   ship a single self-contained HTML file. Deep ensembles, MC dropout and conformal wrappers
   are not ported; the Study step shows their pre-computed results instead.
 - **Verification:** golden files written by `scripts/export_web_golden.py` from the Python
-  code. The simulator agrees to 1e-9 relative on 400 random rows, the ilr transform to 1e-10 and
-  Dirichlet ilr moments to 1e-8, GP predictions with fixed hyperparameters to 1e-7, isotonic regression exactly and
-  raw boosted scores to ~0.04 in log-odds on average (float32 histograms and tie-breaking in
+  code. The simulator agrees to 1e-9 relative on 400 random rows, the ilr transform to
+  1e-10 and Dirichlet ilr moments to 1e-8, GP predictions with fixed hyperparameters to
+  1e-7, isotonic regression exactly and raw boosted scores to ~0.04 in log-odds on average (float32 histograms and tie-breaking in
   scikit-learn). Hyperparameter fitting (Adam vs L-BFGS) and the classifier's CV folds differ,
   so fitted models agree statistically, not bit for bit: the calibrated classifier's error
-  against the true P(success) is within 2 % of scikit-learn's on the golden data set.
+  against the true P(success) is 1 % lower than scikit-learn's on the golden data set.
 - **Consequence:** numbers produced in the browser are a second implementation of the same
   method, not the study. Only the Study step reports the pre-registered results, and it
   reads them from `results/full`.
